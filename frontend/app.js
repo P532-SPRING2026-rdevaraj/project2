@@ -2,7 +2,7 @@
 // Change this to your Render.com backend URL before deploying to GitHub Pages.
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:8080'
-  : 'https://YOUR-RENDER-URL.onrender.com';   // ← paste your Render URL here
+  : 'https://hospital-order-system.onrender.com';
 
 // ── Tab navigation ─────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
