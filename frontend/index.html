@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Order Management System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Hospital Order Management System</h1>
+    <nav>
+      <button class="tab-btn active" data-tab="queue">Order Queue</button>
+      <button class="tab-btn" data-tab="submit">Submit Order</button>
+      <button class="tab-btn" data-tab="audit">Audit Trail</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ─── Order Queue ──────────────────────────────────────────────── -->
+    <section id="tab-queue" class="tab-panel active">
+      <div class="panel-header">
+        <h2>Order Queue</h2>
+        <span id="poll-indicator" class="poll-dot" title="Auto-refreshing every 3 s"></span>
+      </div>
+      <div id="queue-container">
+        <table id="queue-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Type</th><th>Patient</th><th>Clinician</th>
+              <th>Description</th><th>Priority</th><th>Status</th>
+              <th>Claimed By</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queue-body"></tbody>
+        </table>
+        <p id="queue-empty" class="empty-msg hidden">No orders in the system yet.</p>
+      </div>
+
+      <!-- Fulfilment identity -->
+      <div class="identity-bar">
+        <label>Staff ID (for claim / complete):
+          <input id="staff-id" type="text" placeholder="e.g. Tech-1" />
+        </label>
+      </div>
+    </section>
+
+    <!-- ─── Submit Order ─────────────────────────────────────────────── -->
+    <section id="tab-submit" class="tab-panel">
+      <h2>Submit New Order</h2>
+      <form id="submit-form">
+        <div class="form-group">
+          <label for="order-type">Order Type</label>
+          <select id="order-type" required>
+            <option value="">-- select --</option>
+            <option value="LAB">Lab</option>
+            <option value="MEDICATION">Medication</option>
+            <option value="IMAGING">Imaging</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="patient-name">Patient Name</label>
+          <input id="patient-name" type="text" required placeholder="Full name" />
+        </div>
+        <div class="form-group">
+          <label for="clinician">Ordering Clinician</label>
+          <input id="clinician" type="text" required placeholder="e.g. Dr. Smith" />
+        </div>
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" required placeholder="Order details…" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <select id="priority" required>
+            <option value="">-- select --</option>
+            <option value="ROUTINE">Routine</option>
+            <option value="URGENT">Urgent</option>
+            <option value="STAT">STAT</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Order</button>
+        <div id="submit-message" class="message hidden"></div>
+      </form>
+    </section>
+
+    <!-- ─── Audit Trail ──────────────────────────────────────────────── -->
+    <section id="tab-audit" class="tab-panel">
+      <h2>Audit Trail</h2>
+      <div id="audit-container">
+        <table id="audit-table">
+          <thead>
+            <tr><th>Timestamp</th><th>Action</th><th>Order ID</th><th>Actor</th></tr>
+          </thead>
+          <tbody id="audit-body"></tbody>
+        </table>
+        <p id="audit-empty" class="empty-msg hidden">No commands logged yet.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
