@@ -7,6 +7,13 @@ package com.hospital.ordersystem.command;
  */
 public interface OrderCommand {
     void execute();
+
+    /**
+     * Reverses the effect of execute(). Default is no-op so existing
+     * commands compile without change until Week 2 implements undo logic.
+     */
+    default void undo() {}
+
     String getCommandType();
     String getOrderId();
     String getActor();
