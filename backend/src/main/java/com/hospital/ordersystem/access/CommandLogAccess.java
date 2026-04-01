@@ -7,10 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Resource Access layer — in-memory store for the command audit log.
- * Layer: Resource Access.
- */
 @Component
 public class CommandLogAccess {
 

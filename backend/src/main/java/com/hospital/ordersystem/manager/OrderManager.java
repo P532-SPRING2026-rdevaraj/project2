@@ -11,11 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Manager — orchestrates all order-related use cases. Receives Command objects,
- * dispatches them, and records each execution in the command log.
- * Layer: Business Logic (Manager).
- */
 @Component
 public class OrderManager {
 
@@ -37,41 +32,25 @@ public class OrderManager {
         this.eventPublisher = eventPublisher;
     }
 
-    // -----------------------------------------------------------------------
-    // Use case 1: Submit an order
-    // -----------------------------------------------------------------------
     public Order submitOrder(OrderType type, String patientName, String clinician,
                              String description, OrderPriority priority) {
         Order order = orderFactory.createOrder(type, patientName, clinician, description, priority);
-        OrderCommand cmd = new SubmitOrderCommand(order, orderAccess, triagingEngine, eventPublisher);
-        dispatch(cmd);
+        dispatch(new SubmitOrderCommand(order, orderAccess, triagingEngine, eventPublisher));
         return order;
     }
 
-    // -----------------------------------------------------------------------
-    // Use case 2: Fulfil an order (claim + complete)
-    // -----------------------------------------------------------------------
     public void claimOrder(String orderId, String staffMember) {
-        OrderCommand cmd = new ClaimOrderCommand(orderId, staffMember, orderAccess, eventPublisher);
-        dispatch(cmd);
+        dispatch(new ClaimOrderCommand(orderId, staffMember, orderAccess, eventPublisher));
     }
 
     public void completeOrder(String orderId, String staffMember) {
-        OrderCommand cmd = new CompleteOrderCommand(orderId, staffMember, orderAccess, eventPublisher);
-        dispatch(cmd);
+        dispatch(new CompleteOrderCommand(orderId, staffMember, orderAccess, eventPublisher));
     }
 
-    // -----------------------------------------------------------------------
-    // Cancel (clinician)
-    // -----------------------------------------------------------------------
     public void cancelOrder(String orderId, String clinician) {
-        OrderCommand cmd = new CancelOrderCommand(orderId, clinician, orderAccess, eventPublisher);
-        dispatch(cmd);
+        dispatch(new CancelOrderCommand(orderId, clinician, orderAccess, eventPublisher));
     }
 
-    // -----------------------------------------------------------------------
-    // Queries
-    // -----------------------------------------------------------------------
     public List<Order> getQueue() {
         return triagingEngine.getAllOrders();
     }
@@ -80,9 +59,6 @@ public class OrderManager {
         return commandLogAccess.getAll();
     }
 
-    // -----------------------------------------------------------------------
-    // Internal dispatcher — executes the command and records it in the log
-    // -----------------------------------------------------------------------
     private void dispatch(OrderCommand cmd) {
         cmd.execute();
         commandLogAccess.append(new CommandLogEntry(cmd.getCommandType(), cmd.getOrderId(), cmd.getActor()));

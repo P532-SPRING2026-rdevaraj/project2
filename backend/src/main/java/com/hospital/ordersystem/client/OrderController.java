@@ -9,10 +9,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Client layer — REST API surface. Contains zero business logic; every
- * request is immediately delegated to OrderManager.
- */
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -23,13 +19,11 @@ public class OrderController {
         this.orderManager = orderManager;
     }
 
-    /** GET /api/orders — full queue (all statuses, triage-sorted) */
     @GetMapping
     public List<OrderDto> getQueue() {
         return orderManager.getQueue().stream().map(OrderDto::from).toList();
     }
 
-    /** POST /api/orders — submit a new order */
     @PostMapping
     public ResponseEntity<?> submitOrder(@RequestBody SubmitRequest req) {
         try {
@@ -43,7 +37,6 @@ public class OrderController {
         }
     }
 
-    /** POST /api/orders/{id}/claim */
     @PostMapping("/{id}/claim")
     public ResponseEntity<?> claimOrder(@PathVariable String id,
                                         @RequestBody ActorRequest req) {
@@ -55,7 +48,6 @@ public class OrderController {
         }
     }
 
-    /** POST /api/orders/{id}/complete */
     @PostMapping("/{id}/complete")
     public ResponseEntity<?> completeOrder(@PathVariable String id,
                                            @RequestBody ActorRequest req) {
@@ -67,7 +59,6 @@ public class OrderController {
         }
     }
 
-    /** POST /api/orders/{id}/cancel */
     @PostMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(@PathVariable String id,
                                          @RequestBody ActorRequest req) {
@@ -78,10 +69,6 @@ public class OrderController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
-    // -----------------------------------------------------------------------
-    // DTOs and request records
-    // -----------------------------------------------------------------------
 
     public record SubmitRequest(String type, String patientName, String clinician,
                                 String description, String priority) {}

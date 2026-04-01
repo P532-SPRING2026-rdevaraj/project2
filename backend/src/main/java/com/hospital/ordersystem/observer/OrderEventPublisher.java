@@ -6,10 +6,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Subject in the Observer pattern. Maintains the list of observers and
- * notifies them whenever an order event occurs.  Layer: Business Logic.
- */
 @Component
 public class OrderEventPublisher {
 
@@ -20,8 +16,6 @@ public class OrderEventPublisher {
     }
 
     public void publish(Order order, String event) {
-        for (OrderObserver observer : observers) {
-            observer.onOrderEvent(order, event);
-        }
+        observers.forEach(o -> o.onOrderEvent(order, event));
     }
 }

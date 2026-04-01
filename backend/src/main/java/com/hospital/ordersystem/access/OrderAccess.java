@@ -9,11 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Resource Access layer — encapsulates all access to the in-memory order store.
- * Exposes atomic business verbs so the Manager never touches raw collections.
- * Layer: Resource Access.
- */
 @Component
 public class OrderAccess {
 

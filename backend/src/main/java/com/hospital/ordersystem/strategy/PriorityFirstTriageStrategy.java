@@ -6,10 +6,6 @@ import org.springframework.stereotype.Component;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Week 1 triage: STAT first, then URGENT, then ROUTINE.
- * Ties are broken by submission time (FIFO).
- */
 @Component
 public class PriorityFirstTriageStrategy implements TriageStrategy {
 

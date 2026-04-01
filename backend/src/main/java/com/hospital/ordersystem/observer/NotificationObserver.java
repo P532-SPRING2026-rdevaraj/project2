@@ -4,10 +4,6 @@ import com.hospital.ordersystem.model.Order;
 import com.hospital.ordersystem.utility.NotificationService;
 import org.springframework.stereotype.Component;
 
-/**
- * Concrete Observer that delegates to NotificationService when an order
- * event fires.  Layer: Business Logic.
- */
 @Component
 public class NotificationObserver implements OrderObserver {
 

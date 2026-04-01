@@ -27,7 +27,6 @@ public class SubmitOrderCommand implements OrderCommand {
 
     @Override
     public void execute() {
-        // Run through the decorator chain: validate → audit log → save
         OrderHandler handler = new AuditLoggingDecorator(
                                    new ValidationDecorator(
                                        new BaseOrderHandler()));

@@ -6,14 +6,6 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Factory pattern — centralises creation of the correct Order subtype
- * (LabOrder, MedicationOrder, ImagingOrder) so callers are decoupled
- * from concrete classes.  Layer: Business Logic.
- *
- * Uses a registry map instead of a switch so adding a new OrderType only
- * requires adding one entry here — no other existing file changes needed.
- */
 @Component
 public class OrderFactory {
 

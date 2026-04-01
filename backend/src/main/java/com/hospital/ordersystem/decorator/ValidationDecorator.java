@@ -2,10 +2,6 @@ package com.hospital.ordersystem.decorator;
 
 import com.hospital.ordersystem.model.Order;
 
-/**
- * Decorator that validates required fields before passing the order
- * down the processing chain.  Layer: Business Logic.
- */
 public class ValidationDecorator extends OrderHandlerDecorator {
 
     public ValidationDecorator(OrderHandler wrapped) {

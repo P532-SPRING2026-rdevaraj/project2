@@ -8,11 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Engine — encapsulates the triage algorithm. Uses the TriageStrategy so
- * the sorting policy can be changed at runtime without touching this class.
- * Layer: Business Logic (Engine).
- */
 @Component
 public class TriagingEngine {
 
@@ -24,17 +19,12 @@ public class TriagingEngine {
         this.triageStrategy = triageStrategy;
     }
 
-    /** Returns all PENDING orders sorted by the active triage strategy. */
     public List<Order> getTriagedQueue() {
-        List<Order> pending = orderAccess.listPendingOrders();
-        return triageStrategy.sort(pending);
+        return triageStrategy.sort(orderAccess.listPendingOrders());
     }
 
-    /** Returns all orders (all statuses) sorted by triage for the full queue view. */
     public List<Order> getAllOrders() {
-        List<Order> all = orderAccess.listAllOrders();
-        // Sort: PENDING first by priority, then IN_PROGRESS, COMPLETED, CANCELLED
-        return all.stream()
+        return orderAccess.listAllOrders().stream()
                 .sorted((a, b) -> {
                     int statusOrder = statusRank(a.getStatus()) - statusRank(b.getStatus());
                     if (statusOrder != 0) return statusOrder;
@@ -45,12 +35,8 @@ public class TriagingEngine {
                 .toList();
     }
 
-    /** Triggers a re-sort of the in-memory queue (no-op here; sorting is on-read). */
-    public void requeue() {
-        // The queue is sorted on every read via getTriagedQueue(), so no action needed.
-    }
+    public void requeue() {}
 
-    /** Swap the triage strategy at runtime without restarting. */
     public void setTriageStrategy(TriageStrategy triageStrategy) {
         this.triageStrategy = triageStrategy;
     }

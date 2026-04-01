@@ -9,10 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Client layer — exposes the command audit log.
- * Delegates immediately to OrderManager; contains no business logic.
- */
 @RestController
 @RequestMapping("/api/audit")
 public class AuditController {

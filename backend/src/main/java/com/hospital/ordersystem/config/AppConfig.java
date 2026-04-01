@@ -9,13 +9,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
-/**
- * Wires the Observer chain on startup and configures CORS so the
- * GitHub-Pages-hosted frontend can call the Render-hosted backend.
- *
- * Adding a new observer requires ZERO changes here — just annotate the
- * new class with @Component and Spring will inject it automatically.
- */
 @Configuration
 public class AppConfig implements WebMvcConfigurer {
 
