@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.hospital.ordersystem.OrderManagerTest" time="0.009" tests="8" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.417" tests="7" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -57,38 +57,20 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="claimOrder_changesStatusToInProgress" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.133984 | Order E7216881 (IMAGING) accepted for processing | Patient: Carol
+  <testcase name="submitOrder_publishesEvent" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.396">
+    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.074004 | Order 909D3F2E (MEDICATION) accepted for processing | Patient: Bob
 ]]></system-out>
   </testcase>
-  <testcase name="submitOrder_createsOrderWithCorrectType" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.135375 | Order 4375469C (LAB) accepted for processing | Patient: Alice
+  <testcase name="submitOrder_savesOrderToAccess" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.003">
+    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.094268 | Order 0C085421 (LAB) accepted for processing | Patient: Alice
 ]]></system-out>
   </testcase>
-  <testcase name="cancelOrder_nonPendingOrder_throwsException" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.136924 | Order 35496BC6 (LAB) accepted for processing | Patient: Frank
+  <testcase name="claimOrder_publishesClaimEvent" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.004"/>
+  <testcase name="getCommandLog_delegatesToCommandLogAccess" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.002"/>
+  <testcase name="getQueue_delegatesToTriagingEngine" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.002"/>
+  <testcase name="submitOrder_logsCommandEntry" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.002">
+    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.105770 | Order EE5488AF (IMAGING) accepted for processing | Patient: Carol
 ]]></system-out>
   </testcase>
-  <testcase name="submitOrder_recordsCommandLog" classname="com.hospital.ordersystem.OrderManagerTest" time="0.0">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.138740 | Order C2DBB405 (MEDICATION) accepted for processing | Patient: Bob
-]]></system-out>
-  </testcase>
-  <testcase name="completeOrder_changesStatusToCompleted" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.139364 | Order 05FD20E6 (LAB) accepted for processing | Patient: Dave
-]]></system-out>
-  </testcase>
-  <testcase name="cancelOrder_pendingOrder_succeeds" classname="com.hospital.ordersystem.OrderManagerTest" time="0.0">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.140456 | Order C29960FC (MEDICATION) accepted for processing | Patient: Eve
-]]></system-out>
-  </testcase>
-  <testcase name="claimOrder_alreadyClaimed_throwsException" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.140965 | Order B58B7C14 (IMAGING) accepted for processing | Patient: Grace
-]]></system-out>
-  </testcase>
-  <testcase name="triageQueue_statOrdersBeforeRoutine" classname="com.hospital.ordersystem.OrderManagerTest" time="0.001">
-    <system-out><![CDATA[[AUDIT] 2026-03-31T21:10:58.142059 | Order CF6F387E (LAB) accepted for processing | Patient: P1
-[AUDIT] 2026-03-31T21:10:58.142157 | Order DEA81989 (LAB) accepted for processing | Patient: P2
-[AUDIT] 2026-03-31T21:10:58.142242 | Order 825CACAE (LAB) accepted for processing | Patient: P3
-]]></system-out>
-  </testcase>
+  <testcase name="cancelOrder_nonExistentOrder_throwsException" classname="com.hospital.ordersystem.OrderManagerMockitoTest" time="0.003"/>
 </testsuite>
