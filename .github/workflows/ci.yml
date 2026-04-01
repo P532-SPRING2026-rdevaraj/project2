@@ -25,6 +25,5 @@ jobs:
         working-directory: backend
         run: mvn verify -q
 
-      - name: Docker build
-        working-directory: backend
+      - name: Docker build (from repository root)
         run: docker build -t hospital-order-system:ci .
