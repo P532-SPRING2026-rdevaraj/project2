@@ -9,7 +9,7 @@ A hospital order management system built with Spring Boot (backend) and plain HT
 
 | | URL |
 |---|---|
-| **Frontend** | https://p532-spring2026-rdevaraj.github.io/project2 |
+| **Frontend** | https://project2-week2.onrender.com |
 | **Backend API** | https://hospital-order-system.onrender.com/api/orders |
 
 ---
