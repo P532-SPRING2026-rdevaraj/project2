@@ -71,3 +71,10 @@ jobs:
     steps:
       - name: Trigger Render deploy (Week 2)
         run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_WEEK2 }}"
+
+      - name: Print live URL
+        run: |
+          echo "──────────────────────────────────────────"
+          echo "  Week 2 live at: https://project2-week2.onrender.com"
+          echo "  API:            https://project2-week2.onrender.com/api/orders"
+          echo "──────────────────────────────────────────"
