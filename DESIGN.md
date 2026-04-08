@@ -15,14 +15,14 @@
 ║   │  POST /api/orders/{id}/ │   │                         │          ║
 ║   │    claim | complete     │   │                         │          ║
 ║   │    cancel               │   │                         │          ║
-║   └────────────┬────────────┘   └────────────┬────────────┘          ║
+║   └────────────┬────────────┘   └───────────────┬─────────┘          ║
 ╚════════════════│════════════════════════════════│════════════════════╝
                  │ delegates all calls            │ delegates all calls
 ╔════════════════▼════════════════════════════════▼════════════════════╗
 ║                    BUSINESS LOGIC LAYER                              ║
 ║                                                                      ║
 ║   ┌──────────────────────────────────────────────────────────────┐   ║
-║   │                      OrderManager                           │    ║
+║   │                      OrderManager                            │   ║
 ║   │  submitOrder()  claimOrder()  completeOrder()  cancelOrder() │   ║
 ║   │  getQueue()     getCommandLog()                              │   ║
 ║   │  dispatch(OrderCommand) → logs to CommandLogAccess           │   ║
@@ -207,4 +207,37 @@ Staff Member sees order disappear from their queue (next 3-second poll)
 | **Observer** | `OrderObserver` (interface), `OrderEventPublisher`, `NotificationObserver` | Business Logic | Decouples order state changes from the components that react to them so a new reaction (e.g. WebSocket push, email alert) can be added in Week 2 by creating a single `@Component` class with zero changes to `OrderManager` or the command objects. |
 | **Decorator** | `OrderHandler` (interface), `BaseOrderHandler`, `OrderHandlerDecorator`, `ValidationDecorator`, `AuditLoggingDecorator` | Business Logic | Stacks order-processing steps (validation, audit logging) transparently around a base handler so each step can be added, removed, or reordered without modifying the handler it wraps or the `SubmitOrderCommand` that builds the chain. |
 | **Factory** | `OrderFactory`, `OrderCreator` (functional interface), `LabOrder`, `MedicationOrder`, `ImagingOrder` | Business Logic | Centralises order subtype creation in a registry map so callers (`OrderManager`) are fully decoupled from concrete classes and a new order type requires adding only one entry to `OrderFactory` with no changes elsewhere. |
-| **Command** | `OrderCommand` (interface), `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand` | Business Logic | Encapsulates each order action as a self-contained object carrying all required data so `OrderManager` can dispatch, log, and — in Week 2 — undo any action by overriding the default `undo()` method on the relevant command class only. |
+| **Command** | `OrderCommand` (interface), `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand`, `UndoableCommandDecorator` | Business Logic | Encapsulates each order action as a self-contained object carrying all required data so `OrderManager` can dispatch, log, and undo any action; in Week 2 a single `UndoableCommandDecorator` wraps any command at the dispatch site, adding undo without touching any command class. |
+
+---
+
+## 4. Week 2 Changes — File-Count Audit
+
+| Change | Pre-existing files modified | New files added |
+|---|---|---|
+| Change 1 — Department-Aware Triage | 1 (`OrderManager`) | `LoadBalancingTriageStrategy`, `DeadlineFirstTriageStrategy`, `TriageController`, `StrategyConfig`, `ClockConfig` |
+| Change 2a — Multi-Channel Notifications | 0 | `NotificationPreferences`, `InAppNotificationService`, `EmailNotificationService`, `CompositeNotificationService`, `NotificationController` |
+| Change 2b — Order Processing Decorators | 1 (`Order.setPriority`) | `PriorityEscalationDecorator`, `StatAuditDecorator`, `StatAwareSubmitOrderCommand` |
+| Change 3 — Command Undo and Replay | 1 (`OrderAccess.deleteOrder`; `OrderManager` already counted in Change 1) | `UndoableCommandDecorator`, `UndoController` |
+
+`StrategyConfig` (new) injects and re-exposes the existing `PriorityFirstTriageStrategy` component as `@Primary`, eliminating the need to touch that file. `StatAwareSubmitOrderCommand` (new) carries the Week 2 decorator chain, so `SubmitOrderCommand` remains at its Week 1 state. `OrderManager` is counted once under Change 1 since all four changes' additions landed in a single file.
+
+---
+
+## 5. Week 2 — Volatility Missed in Week 1 & What I Would Do Differently
+
+**Volatility missed:** The `Order` domain model had `priority` declared `final`, assuming priority was immutable after creation. The `PriorityEscalationDecorator` (Change 2b) needs to mutate priority at processing time, which required removing `final` and adding `setPriority()`. A better Week 1 design would have treated priority as mutable from the start — or introduced a separate `ProcessedOrder` value object that carries the resolved priority — so the domain model would not need touching for a processing-layer concern.
+
+**What I would do differently:** Separate the "submitted priority" (immutable intent from the clinician) from the "effective priority" (possibly escalated by the decorator chain) using a wrapper or a dedicated field on the command, keeping `Order` fully immutable below the business-logic layer.
+
+---
+
+## 6. Week 2 — Pattern Audit (Two Sentences per Pattern)
+
+| Pattern | Audit |
+|---|---|
+| **Strategy** | Adding `LoadBalancingTriageStrategy` and `DeadlineFirstTriageStrategy` required zero changes to `TriagingEngine` or `OrderManager` — a new `StrategyConfig` bean and a selector endpoint were sufficient. The strategy interface absorbed the entire Change 1 volatility as intended. |
+| **Observer** | Adding `InAppNotificationService`, `EmailNotificationService`, and the `CompositeNotificationService` required zero changes to `OrderManager`, `OrderEventPublisher`, or any command class. `@Primary` on `CompositeNotificationService` redirected the existing observer chain without touching `NotificationObserver`. |
+| **Decorator** | Stacking `PriorityEscalationDecorator` and `StatAuditDecorator` required zero changes to `SubmitOrderCommand` — a new `StatAwareSubmitOrderCommand` carries the extended chain and `OrderManager` dispatches it instead. The `OrderHandler` interface and all existing decorators were untouched. |
+| **Factory** | `OrderFactory` was untouched across both weeks; no new order types were introduced in Week 2, confirming the registry map isolates callers from concrete classes as designed. |
+| **Command** | `UndoableCommandDecorator` delivered Change 3 (undo + replay) by wrapping commands at the `OrderManager.dispatch()` site — zero individual command classes were modified. The Command pattern's object-encapsulation paid off exactly as the spec predicted. |

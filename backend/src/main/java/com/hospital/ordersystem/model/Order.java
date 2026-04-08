@@ -9,7 +9,7 @@ public abstract class Order {
     private final String patientName;
     private final String clinician;
     private final String description;
-    private final OrderPriority priority;
+    private OrderPriority priority;
     private OrderStatus status;
     private final LocalDateTime submittedAt;
     private String claimedBy;
@@ -36,6 +36,7 @@ public abstract class Order {
     public LocalDateTime getSubmittedAt() { return submittedAt; }
     public String getClaimedBy()     { return claimedBy; }
 
-    public void setStatus(OrderStatus status) { this.status = status; }
-    public void setClaimedBy(String claimedBy) { this.claimedBy = claimedBy; }
+    public void setStatus(OrderStatus status)     { this.status = status; }
+    public void setClaimedBy(String claimedBy)   { this.claimedBy = claimedBy; }
+    public void setPriority(OrderPriority priority) { this.priority = priority; }
 }

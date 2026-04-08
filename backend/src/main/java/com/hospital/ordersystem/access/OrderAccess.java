@@ -31,4 +31,8 @@ public class OrderAccess {
                 .filter(o -> o.getStatus().name().equals("PENDING"))
                 .toList();
     }
+
+    public void deleteOrder(String orderId) {
+        store.remove(orderId);
+    }
 }

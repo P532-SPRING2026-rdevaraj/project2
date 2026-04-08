@@ -1,2 +1,2 @@
 com/hospital/ordersystem/engine/TriagingEngine$1.class
-com/hospital/ordersystem/factory/OrderFactory$1.class
+com/hospital/ordersystem/strategy/DeadlineFirstTriageStrategy$1.class

@@ -13,7 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,8 +40,10 @@ class OrderManagerMockitoTest {
     @BeforeEach
     void setUp() {
         orderFactory = new OrderFactory();
+        // Stub listAllOrders for STAT/URGENT decorator paths (lenient: not all tests trigger it)
+        lenient().when(orderAccess.listAllOrders()).thenReturn(List.of());
         orderManager = new OrderManager(orderFactory, orderAccess, commandLogAccess,
-                triagingEngine, eventPublisher);
+                triagingEngine, eventPublisher, Clock.systemDefaultZone(), Map.of());
     }
 
     @Test

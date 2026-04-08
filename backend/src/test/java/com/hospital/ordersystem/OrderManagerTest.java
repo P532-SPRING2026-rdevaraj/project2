@@ -8,10 +8,13 @@ import com.hospital.ordersystem.manager.OrderManager;
 import com.hospital.ordersystem.model.*;
 import com.hospital.ordersystem.observer.OrderEventPublisher;
 import com.hospital.ordersystem.strategy.PriorityFirstTriageStrategy;
+import com.hospital.ordersystem.strategy.TriageStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,8 +32,10 @@ class OrderManagerTest {
         TriagingEngine triagingEngine = new TriagingEngine(orderAccess, strategy);
         OrderEventPublisher eventPublisher = new OrderEventPublisher();
 
+        Map<String, TriageStrategy> strategies =
+                Map.of("priorityFirstTriageStrategy", strategy);
         orderManager = new OrderManager(orderFactory, orderAccess, commandLogAccess,
-                triagingEngine, eventPublisher);
+                triagingEngine, eventPublisher, Clock.systemDefaultZone(), strategies);
     }
 
     @Test
@@ -99,9 +104,10 @@ class OrderManagerTest {
 
     @Test
     void triageQueue_statOrdersBeforeRoutine() {
-        orderManager.submitOrder(OrderType.LAB, "P1", "Dr. A", "Routine lab", OrderPriority.ROUTINE);
-        orderManager.submitOrder(OrderType.LAB, "P2", "Dr. B", "Stat lab", OrderPriority.STAT);
-        orderManager.submitOrder(OrderType.LAB, "P3", "Dr. C", "Urgent lab", OrderPriority.URGENT);
+        // Use different types so the escalation decorator does not fire across types
+        orderManager.submitOrder(OrderType.MEDICATION, "P1", "Dr. A", "Routine med", OrderPriority.ROUTINE);
+        orderManager.submitOrder(OrderType.LAB,        "P2", "Dr. B", "Stat lab",    OrderPriority.STAT);
+        orderManager.submitOrder(OrderType.IMAGING,    "P3", "Dr. C", "Urgent scan", OrderPriority.URGENT);
 
         List<Order> queue = orderManager.getQueue();
         // STAT first, then URGENT, then ROUTINE
