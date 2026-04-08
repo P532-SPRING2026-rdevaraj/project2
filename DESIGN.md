@@ -3,87 +3,97 @@
 
 ---
 
+## Submission URLs
+
+| Item | URL |
+|---|---|
+| **GitHub Repository** | https://github.com/P532-SPRING2026-rdevaraj/project2 |
+| **Week 1 — Live App** | https://p532-spring2026-rdevaraj.github.io/project2 |
+| **Week 1 — Backend API** | https://hospital-order-system.onrender.com |
+| **Week 2 — Live App (branch: week2)** | https://project2-week2.onrender.com |
+| **Week 2 — Backend API** | https://project2-week2.onrender.com/api/orders |
+
+---
+
 ## 1. Layered Component Diagram
 
 ```
-╔══════════════════════════════════════════════════════════════════════╗
-║                         CLIENT LAYER                                 ║
-║                                                                      ║
-║   ┌─────────────────────────┐   ┌─────────────────────────┐          ║
-║   │    OrderController      │   │    AuditController      │          ║
-║   │  POST /api/orders       │   │  GET  /api/audit        │          ║
-║   │  POST /api/orders/{id}/ │   │                         │          ║
-║   │    claim | complete     │   │                         │          ║
-║   │    cancel               │   │                         │          ║
-║   └────────────┬────────────┘   └───────────────┬─────────┘          ║
-╚════════════════│════════════════════════════════│════════════════════╝
-                 │ delegates all calls            │ delegates all calls
-╔════════════════▼════════════════════════════════▼════════════════════╗
-║                    BUSINESS LOGIC LAYER                              ║
-║                                                                      ║
-║   ┌──────────────────────────────────────────────────────────────┐   ║
-║   │                      OrderManager                            │   ║
-║   │  submitOrder()  claimOrder()  completeOrder()  cancelOrder() │   ║
-║   │  getQueue()     getCommandLog()                              │   ║
-║   │  dispatch(OrderCommand) → logs to CommandLogAccess           │   ║
-║   └───────┬──────────────────────────────────┬───────────────────┘   ║
-║           │                                  │                       ║
-║   ┌───────▼──────────────┐   ┌───────────────▼─────────────────┐     ║
-║   │   TriagingEngine     │   │        OrderFactory             │     ║
-║   │  getTriagedQueue()   │   │  createOrder(type,...)          │     ║
-║   │  getAllOrders()      │   │  registry map of OrderCreators  │     ║
-║   │  setTriageStrategy() │   └─────────────────────────────────┘     ║
-║   └───────┬──────────────┘                                           ║
-║           │ uses                                                     ║
-║   ┌───────▼──────────────┐                                           ║
-║   │   TriageStrategy     │◄── PriorityFirstTriageStrategy            ║
-║   │  «interface»         │    (STAT > URGENT > ROUTINE, FIFO)        ║
-║   └──────────────────────┘                                           ║
-║                                                                      ║
-║   ─── Command Objects ──────────────────────────────────────────     ║
-║   SubmitOrderCommand  ClaimOrderCommand                              ║
-║   CompleteOrderCommand  CancelOrderCommand                           ║
-║   (all implement OrderCommand interface with execute() / undo())     ║
-║                                                                      ║
-║   ─── Decorator Chain (runs inside SubmitOrderCommand) ──────────    ║
-║   AuditLoggingDecorator → ValidationDecorator → BaseOrderHandler     ║
-║                                                                      ║
-║   ─── Observer Chain ───────────────────────────────────────────     ║
-║   OrderEventPublisher ──► NotificationObserver                       ║
-║                                (implements OrderObserver)            ║
-╚══════════════════════════════════════════════════════════════════════╝
-                 │                              │
-╔════════════════▼══════════════════════════════▼══════════════════════╗
-║                    RESOURCE ACCESS LAYER                             ║
-║                                                                      ║
-║   ┌──────────────────────────┐   ┌──────────────────────────┐        ║
-║   │       OrderAccess        │   │    CommandLogAccess      │        ║
-║   │  saveOrder()             │   │  append(entry)           │        ║
-║   │  findOrderById()         │   │  getAll()                │        ║
-║   │  listAllOrders()         │   └──────────────┬───────────┘        ║
-║   │  listPendingOrders()     │                  │                    ║
-║   └──────────────┬───────────┘                  │                    ║
-╚══════════════════│══════════════════════════════│════════════════════╝
-                   │                              │
-╔══════════════════▼══════════════════════════════▼════════════════════╗
-║                      RESOURCE LAYER                                  ║
-║                                                                      ║
-║   ┌──────────────────────────────────────────────────────────────┐   ║
-║   │   In-Memory Store  (ConcurrentHashMap + synchronized List)   │   ║
-║   │   Order subclasses: LabOrder | MedicationOrder | ImagingOrder│   ║
-║   │   CommandLogEntry list                                       │   ║
-║   └──────────────────────────────────────────────────────────────┘   ║
-╚══════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              CLIENT LAYER                                    ║
+║                                                                              ║
+║  OrderController        AuditController     TriageController   (Week 2)     ║
+║  POST /api/orders       GET /api/audit      PUT /api/triage/strategy        ║
+║  POST /{id}/claim                                                            ║
+║  POST /{id}/complete    NotificationController (Week 2)                     ║
+║  POST /{id}/cancel      GET/PUT /api/notifications/preferences              ║
+║                         GET /api/notifications/badge                        ║
+║  UndoController (Week 2)                                                    ║
+║  POST /api/orders/undo                                                      ║
+║  POST /api/orders/replay/{index}                                            ║
+╚════════════════════════════╤════════════════════════════════════════════════╝
+                             │ delegates — no business logic in controllers
+╔════════════════════════════▼════════════════════════════════════════════════╗
+║                         BUSINESS LOGIC LAYER                                ║
+║                                                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐    ║
+║  │                         OrderManager                                │    ║
+║  │  submitOrder()  claimOrder()  completeOrder()  cancelOrder()        │    ║
+║  │  getQueue()  getCommandLog()  setTriageStrategy()  undo()  replay() │    ║
+║  │  dispatch(cmd) → wraps in UndoableCommandDecorator → logs           │    ║
+║  └──────────┬─────────────────────────────────────┬────────────────────┘    ║
+║             │                                     │                         ║
+║  ┌──────────▼──────────┐             ┌────────────▼──────────────────┐      ║
+║  │   TriagingEngine    │             │         OrderFactory          │      ║
+║  │  getAllOrders()     │             │  createOrder(type,...)        │      ║
+║  │  setStrategy()      │             │  registry: LAB/MED/IMAGING    │      ║
+║  └──────────┬──────────┘             └───────────────────────────────┘      ║
+║             │ uses                                                           ║
+║  ┌──────────▼──────────┐                                                    ║
+║  │   TriageStrategy    │◄── PriorityFirstTriageStrategy  (Week 1)           ║
+║  │   «interface»       │◄── LoadBalancingTriageStrategy  (Week 2)           ║
+║  └─────────────────────┘◄── DeadlineFirstTriageStrategy  (Week 2)           ║
+║                                                                              ║
+║  ── Commands ──────────────────────────────────────────────────────────     ║
+║  OrderCommand «interface»                                                   ║
+║  SubmitOrderCommand  StatAwareSubmitOrderCommand(W2)                        ║
+║  ClaimOrderCommand   CompleteOrderCommand   CancelOrderCommand              ║
+║  UndoableCommandDecorator (Week 2) — wraps any command with undo()         ║
+║                                                                              ║
+║  ── Decorator Chain (inside StatAwareSubmitOrderCommand) ───────────────    ║
+║  StatAuditDecorator(W2) → PriorityEscalationDecorator(W2)                  ║
+║    → AuditLoggingDecorator → ValidationDecorator → BaseOrderHandler         ║
+║                                                                              ║
+║  ── Observer Chain ─────────────────────────────────────────────────────    ║
+║  OrderEventPublisher ──► NotificationObserver ──► NotificationService       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                             │
+╔════════════════════════════▼════════════════════════════════════════════════╗
+║                        RESOURCE ACCESS LAYER                                ║
+║                                                                              ║
+║  OrderAccess                          CommandLogAccess                      ║
+║  saveOrder()  findOrderById()         append(CommandLogEntry)               ║
+║  listAllOrders()  listPendingOrders() getAll()                              ║
+║  deleteOrder() (Week 2)                                                     ║
+╚════════════════════════════╤════════════════════════════════════════════════╝
+                             │
+╔════════════════════════════▼════════════════════════════════════════════════╗
+║                           RESOURCE LAYER                                    ║
+║                                                                              ║
+║  In-Memory Store (ConcurrentHashMap + synchronized List)                    ║
+║  Order (abstract) ◄── LabOrder | MedicationOrder | ImagingOrder             ║
+║  CommandLogEntry   OrderStatus (enum)   OrderPriority (enum)                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
-╔══════════════════════════════════════════════════════════════════════╗
-║                       UTILITY LAYER                                  ║
-║                                                                      ║
-║   ┌──────────────────────────────────────────────────────────┐       ║
-║   │  NotificationService «interface»                         │       ║
-║   │    notify(Order, String event)                           │       ║
-║   │  ConsoleNotificationService (Week 1 implementation)      │       ║
-║   └──────────────────────────────────────────────────────────┘       ║
-╚══════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           UTILITY LAYER                                     ║
+║                                                                              ║
+║  NotificationService «interface»  notify(Order, String event)               ║
+║  ConsoleNotificationService       (Week 1)                                  ║
+║  CompositeNotificationService     (Week 2, @Primary — routes to channels)   ║
+║  InAppNotificationService         (Week 2 — badge counter)                  ║
+║  EmailNotificationService         (Week 2 — mock email)                     ║
+║  NotificationPreferences          (Week 2 — per-channel on/off flags)       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -94,52 +104,52 @@
 
 ```
 Clinician (Browser)
-      │
       │  POST /api/orders  {type, patientName, clinician, description, priority}
       ▼
-OrderController                                          [CLIENT]
+OrderController                                            [CLIENT]
       │  orderManager.submitOrder(type, patient, clinician, desc, priority)
       ▼
-OrderManager                                             [MANAGER]
+OrderManager                                               [MANAGER]
       │  1. orderFactory.createOrder(type, ...)
       ▼
-OrderFactory                                             [BUSINESS LOGIC]
-      │     looks up registry map → new LabOrder / MedicationOrder / ImagingOrder
-      │     returns Order
-      ◄─────────────────────────────────────────────────────────
+OrderFactory                                               [ENGINE / BUSINESS LOGIC]
+      │     registry map → new LabOrder / MedicationOrder / ImagingOrder
+      ◄─────── returns Order
       │
-      │  2. new SubmitOrderCommand(order, orderAccess, triagingEngine, eventPublisher)
-      │  3. dispatch(cmd)  →  cmd.execute()
+      │  2. new StatAwareSubmitOrderCommand(order, ...)
+      │  3. dispatch(cmd)
+      │       → wraps in UndoableCommandDecorator (snapshots state)
+      │       → undoable.execute()
       ▼
-SubmitOrderCommand.execute()                             [COMMAND]
-      │  a. AuditLoggingDecorator
-      │       → ValidationDecorator
-      │           → BaseOrderHandler.handle(order)       [DECORATOR CHAIN]
-      │  b. orderAccess.saveOrder(order)
+StatAwareSubmitOrderCommand.execute()                      [COMMAND]
+      │  Decorator chain:
+      │  StatAuditDecorator
+      │    → PriorityEscalationDecorator  (URGENT→STAT if recent STAT same type)
+      │        → AuditLoggingDecorator    (logs [AUDIT] line)
+      │            → ValidationDecorator  (rejects blank fields)
+      │                → BaseOrderHandler (returns order unchanged)
+      │  orderAccess.saveOrder(processed)
       ▼
-OrderAccess                                              [RESOURCE ACCESS]
+OrderAccess                                                [RESOURCE ACCESS]
       │     store.put(orderId, order)
       ▼
-In-Memory Store                                          [RESOURCE]
-      ◄─────────────────────────────────────────────────────────
-      │  c. triagingEngine.requeue()
-      │  d. eventPublisher.publish(order, "ORDER_SUBMITTED")
+In-Memory Store                                            [RESOURCE]
+      ◄─────────────────────────────────────────────────────────────
+      │  eventPublisher.publish(order, "ORDER_SUBMITTED")
       ▼
-OrderEventPublisher → NotificationObserver               [OBSERVER]
-      │                    → notificationService.notify(order, event)
+OrderEventPublisher → NotificationObserver                 [OBSERVER]
+      │                  → compositeNotificationService.notify(order, event)
       ▼
-ConsoleNotificationService                               [UTILITY]
-      │     prints structured log line
-      ◄─────────────────────────────────────────────────────────
-      │  4. commandLogAccess.append(new CommandLogEntry("SUBMIT", orderId, actor))
+CompositeNotificationService                               [UTILITY]
+      │  → ConsoleNotificationService (if enabled)
+      │  → InAppNotificationService   (if enabled — increments badge)
+      │  → EmailNotificationService   (if enabled — logs mock email)
+      ◄─────────────────────────────────────────────────────────────
+      │  commandLogAccess.append(CommandLogEntry("SUBMIT", orderId, actor))
       ▼
-CommandLogAccess                                         [RESOURCE ACCESS]
-      │     log.add(entry)
-      ◄─────────────────────────────────────────────────────────
-OrderManager returns Order
-OrderController returns 200 OK  {OrderDto}
-      ▼
-Clinician sees confirmation message
+CommandLogAccess                                           [RESOURCE ACCESS]
+      ◄─────────────────────────────────────────────────────────────
+OrderManager returns Order → OrderController returns 200 OK {OrderDto}
 ```
 
 ---
@@ -148,53 +158,48 @@ Clinician sees confirmation message
 
 ```
 Staff Member (Browser)
-      │
       │  POST /api/orders/{id}/claim  {actor: "Tech-1"}
       ▼
-OrderController                                          [CLIENT]
-      │  orderManager.claimOrder(orderId, staffMember)
+OrderController                                            [CLIENT]
+      │  orderManager.claimOrder(orderId, "Tech-1")
       ▼
-OrderManager                                             [MANAGER]
-      │  new ClaimOrderCommand(orderId, staffMember, orderAccess, eventPublisher)
-      │  dispatch(cmd)  →  cmd.execute()
+OrderManager                                               [MANAGER]
+      │  new ClaimOrderCommand(orderId, "Tech-1", orderAccess, eventPublisher)
+      │  dispatch(cmd) → UndoableCommandDecorator snapshots PENDING state
+      │  → cmd.execute()
       ▼
-ClaimOrderCommand.execute()                              [COMMAND]
-      │  a. orderAccess.findOrderById(orderId)
-      ▼
-OrderAccess                                              [RESOURCE ACCESS]
-      │     store.get(orderId) → Order
-      ◄─────────────────────────────────────────────────────────
-      │  b. guard: status must be PENDING, claimedBy must be null
+ClaimOrderCommand.execute()                                [COMMAND]
+      │  a. orderAccess.findOrderById(orderId) → Order
+      │  b. guard: status == PENDING, claimedBy == null
       │  c. order.setStatus(IN_PROGRESS), order.setClaimedBy("Tech-1")
       │  d. orderAccess.saveOrder(order)
       │  e. eventPublisher.publish(order, "ORDER_CLAIMED")
       ▼
-ConsoleNotificationService                               [UTILITY]
-      │     prints structured log line
-      ◄─────────────────────────────────────────────────────────
-      │  f. commandLogAccess.append(CommandLogEntry("CLAIM", orderId, "Tech-1"))
-      ◄─────────────────────────────────────────────────────────
+CompositeNotificationService                               [UTILITY]
+      │     notifies all active channels
+      ◄─────────────────────────────────────────────────────────────
+      │  commandLogAccess.append(CommandLogEntry("CLAIM", orderId, "Tech-1"))
+      ◄─────────────────────────────────────────────────────────────
 OrderController returns 200 OK
 
-      ── (Staff clicks Complete) ──────────────────────────────
+      ─── Staff clicks Complete ────────────────────────────────────
 
       │  POST /api/orders/{id}/complete  {actor: "Tech-1"}
       ▼
-OrderController → OrderManager                           [CLIENT → MANAGER]
+OrderController → OrderManager                             [CLIENT → MANAGER]
       │  new CompleteOrderCommand(orderId, "Tech-1", orderAccess, eventPublisher)
-      │  dispatch(cmd)  →  cmd.execute()
+      │  dispatch(cmd) → UndoableCommandDecorator snapshots IN_PROGRESS state
       ▼
-CompleteOrderCommand.execute()                           [COMMAND]
+CompleteOrderCommand.execute()                             [COMMAND]
       │  a. orderAccess.findOrderById(orderId) → Order
-      │  b. guard: status must be IN_PROGRESS, claimedBy must equal "Tech-1"
+      │  b. guard: status == IN_PROGRESS, claimedBy == "Tech-1"
       │  c. order.setStatus(COMPLETED)
       │  d. orderAccess.saveOrder(order)
       │  e. eventPublisher.publish(order, "ORDER_COMPLETED")
       │  f. commandLogAccess.append(CommandLogEntry("COMPLETE", orderId, "Tech-1"))
-      ◄─────────────────────────────────────────────────────────
+      ◄─────────────────────────────────────────────────────────────
 OrderController returns 200 OK
-      ▼
-Staff Member sees order disappear from their queue (next 3-second poll)
+Staff Member sees order status updated on next 3-second poll
 ```
 
 ---
@@ -203,41 +208,49 @@ Staff Member sees order disappear from their queue (next 3-second poll)
 
 | Pattern | Classes Involved | Layer | One-Sentence Justification |
 |---|---|---|---|
-| **Strategy** | `TriageStrategy` (interface), `PriorityFirstTriageStrategy` | Business Logic | Encapsulates the triage algorithm behind a common interface so a new scheduling policy (e.g. round-robin, department-based) can be swapped at runtime by calling `TriagingEngine.setTriageStrategy()` without touching any other class. |
-| **Observer** | `OrderObserver` (interface), `OrderEventPublisher`, `NotificationObserver` | Business Logic | Decouples order state changes from the components that react to them so a new reaction (e.g. WebSocket push, email alert) can be added in Week 2 by creating a single `@Component` class with zero changes to `OrderManager` or the command objects. |
-| **Decorator** | `OrderHandler` (interface), `BaseOrderHandler`, `OrderHandlerDecorator`, `ValidationDecorator`, `AuditLoggingDecorator` | Business Logic | Stacks order-processing steps (validation, audit logging) transparently around a base handler so each step can be added, removed, or reordered without modifying the handler it wraps or the `SubmitOrderCommand` that builds the chain. |
-| **Factory** | `OrderFactory`, `OrderCreator` (functional interface), `LabOrder`, `MedicationOrder`, `ImagingOrder` | Business Logic | Centralises order subtype creation in a registry map so callers (`OrderManager`) are fully decoupled from concrete classes and a new order type requires adding only one entry to `OrderFactory` with no changes elsewhere. |
-| **Command** | `OrderCommand` (interface), `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand`, `UndoableCommandDecorator` | Business Logic | Encapsulates each order action as a self-contained object carrying all required data so `OrderManager` can dispatch, log, and undo any action; in Week 2 a single `UndoableCommandDecorator` wraps any command at the dispatch site, adding undo without touching any command class. |
+| **Strategy** | `TriageStrategy` (interface), `PriorityFirstTriageStrategy`, `LoadBalancingTriageStrategy`, `DeadlineFirstTriageStrategy` | Business Logic | Encapsulates interchangeable triage algorithms behind a common interface so the active policy can be swapped at runtime via `TriagingEngine.setTriageStrategy()` without modifying `OrderManager` or `TriagingEngine`. |
+| **Observer** | `OrderObserver` (interface), `OrderEventPublisher`, `NotificationObserver`, `NotificationService` | Business Logic / Utility | Decouples order state changes from the components that react to them so new notification channels (in-app badge, email) are added as new classes in Week 2 with zero changes to `OrderManager` or any command object. |
+| **Decorator** | `OrderHandler` (interface), `BaseOrderHandler`, `OrderHandlerDecorator`, `ValidationDecorator`, `AuditLoggingDecorator`, `PriorityEscalationDecorator`, `StatAuditDecorator` | Business Logic | Stacks order-processing steps transparently around a base handler so Week 2 escalation and audit steps are added in a new command class (`StatAwareSubmitOrderCommand`) with zero changes to existing decorators or `SubmitOrderCommand`. |
+| **Factory** | `OrderFactory`, `OrderCreator` (functional interface), `LabOrder`, `MedicationOrder`, `ImagingOrder` | Business Logic | Centralises order-subtype creation in a registry map so callers are fully decoupled from concrete classes and a new order type requires adding one registry entry with no changes to `OrderManager` or any controller. |
+| **Command** | `OrderCommand` (interface), `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand`, `UndoableCommandDecorator` | Business Logic | Encapsulates each order action as a self-contained object so `OrderManager` can dispatch, log, and undo any action; in Week 2 a single `UndoableCommandDecorator` adds undo by snapshotting state before `execute()` without touching any individual command class. |
 
 ---
 
-## 4. Week 2 Changes — File-Count Audit
+## 4. Week 2 — Pre-Existing Files Modified Per Change
 
-| Change | Pre-existing files modified | New files added |
+| Change | Files Modified | Count |
 |---|---|---|
-| Change 1 — Department-Aware Triage | 1 (`OrderManager`) | `LoadBalancingTriageStrategy`, `DeadlineFirstTriageStrategy`, `TriageController`, `StrategyConfig`, `ClockConfig` |
-| Change 2a — Multi-Channel Notifications | 0 | `NotificationPreferences`, `InAppNotificationService`, `EmailNotificationService`, `CompositeNotificationService`, `NotificationController` |
-| Change 2b — Order Processing Decorators | 1 (`Order.setPriority`) | `PriorityEscalationDecorator`, `StatAuditDecorator`, `StatAwareSubmitOrderCommand` |
-| Change 3 — Command Undo and Replay | 1 (`OrderAccess.deleteOrder`; `OrderManager` already counted in Change 1) | `UndoableCommandDecorator`, `UndoController` |
+| **Change 1 — Department-Aware Triage** | `OrderManager.java` (added `setTriageStrategy`, `getTriageStrategyName`, `Clock` + strategy map to constructor) | **1** |
+| **Change 2a — Multi-Channel Notifications** | *(none)* | **0** |
+| **Change 2b — Order Processing Decorators** | `Order.java` (removed `final` from `priority` field, added `setPriority()` — priority was incorrectly immutable in Week 1) | **1** |
+| **Change 3 — Command Undo and Replay** | `OrderAccess.java` (added `deleteOrder()` needed for SUBMIT undo; `OrderManager` already counted in Change 1) | **1** |
 
-`StrategyConfig` (new) injects and re-exposes the existing `PriorityFirstTriageStrategy` component as `@Primary`, eliminating the need to touch that file. `StatAwareSubmitOrderCommand` (new) carries the Week 2 decorator chain, so `SubmitOrderCommand` remains at its Week 1 state. `OrderManager` is counted once under Change 1 since all four changes' additions landed in a single file.
+**Total pre-existing files modified across all four changes: 3**
+(`OrderManager`, `Order`, `OrderAccess` — each touched exactly once)
+
+### How the low count was achieved
+
+- **Change 1**: `StrategyConfig` (new file) re-exposes `PriorityFirstTriageStrategy` as `@Primary` — so that existing file is untouched despite Spring now having 3 `TriageStrategy` beans.
+- **Change 2a**: `CompositeNotificationService` (new, `@Primary`) is injected into the existing `NotificationObserver` automatically — zero existing files touched.
+- **Change 2b**: `StatAwareSubmitOrderCommand` (new file) carries the Week 2 decorator chain — `SubmitOrderCommand` is untouched at its Week 1 state.
+- **Change 3**: `UndoableCommandDecorator` (new file) snapshots state before any command executes and restores on `undo()` — zero individual command classes modified. `UndoController` (new file) handles the HTTP endpoints — `OrderController` untouched.
 
 ---
 
-## 5. Week 2 — Volatility Missed in Week 1 & What I Would Do Differently
+## 5. Volatility Missed in Week 1
 
-**Volatility missed:** The `Order` domain model had `priority` declared `final`, assuming priority was immutable after creation. The `PriorityEscalationDecorator` (Change 2b) needs to mutate priority at processing time, which required removing `final` and adding `setPriority()`. A better Week 1 design would have treated priority as mutable from the start — or introduced a separate `ProcessedOrder` value object that carries the resolved priority — so the domain model would not need touching for a processing-layer concern.
+**What was missed:** `Order.priority` was declared `final`, treating priority as immutable after construction. The `PriorityEscalationDecorator` (Change 2b) must mutate priority at processing time, requiring `final` to be removed and `setPriority()` to be added — one file modified that ideally should have been zero.
 
-**What I would do differently:** Separate the "submitted priority" (immutable intent from the clinician) from the "effective priority" (possibly escalated by the decorator chain) using a wrapper or a dedicated field on the command, keeping `Order` fully immutable below the business-logic layer.
+**What I would do differently:** Separate the clinician's submitted priority (immutable) from the system's effective priority (mutable by the processing chain) — either via a `ProcessedOrder` wrapper or a second `effectivePriority` field — keeping the domain model immutable below the business-logic layer.
 
 ---
 
-## 6. Week 2 — Pattern Audit (Two Sentences per Pattern)
+## 6. Pattern Audit (Week 2)
 
-| Pattern | Audit |
+| Pattern | Result |
 |---|---|
-| **Strategy** | Adding `LoadBalancingTriageStrategy` and `DeadlineFirstTriageStrategy` required zero changes to `TriagingEngine` or `OrderManager` — a new `StrategyConfig` bean and a selector endpoint were sufficient. The strategy interface absorbed the entire Change 1 volatility as intended. |
-| **Observer** | Adding `InAppNotificationService`, `EmailNotificationService`, and the `CompositeNotificationService` required zero changes to `OrderManager`, `OrderEventPublisher`, or any command class. `@Primary` on `CompositeNotificationService` redirected the existing observer chain without touching `NotificationObserver`. |
-| **Decorator** | Stacking `PriorityEscalationDecorator` and `StatAuditDecorator` required zero changes to `SubmitOrderCommand` — a new `StatAwareSubmitOrderCommand` carries the extended chain and `OrderManager` dispatches it instead. The `OrderHandler` interface and all existing decorators were untouched. |
-| **Factory** | `OrderFactory` was untouched across both weeks; no new order types were introduced in Week 2, confirming the registry map isolates callers from concrete classes as designed. |
-| **Command** | `UndoableCommandDecorator` delivered Change 3 (undo + replay) by wrapping commands at the `OrderManager.dispatch()` site — zero individual command classes were modified. The Command pattern's object-encapsulation paid off exactly as the spec predicted. |
+| **Strategy** | Adding two new strategies required zero changes to `TriagingEngine` or `OrderManager` — new implementations plus a `StrategyConfig` bean file were sufficient. The interface fully absorbed Change 1's volatility. |
+| **Observer** | Adding three notification channels required zero changes to `OrderManager`, `OrderEventPublisher`, or `NotificationObserver`. `@Primary` on `CompositeNotificationService` redirected the chain automatically. |
+| **Decorator** | Adding escalation and audit decorators required zero changes to `SubmitOrderCommand` or existing decorators — a new `StatAwareSubmitOrderCommand` carries the extended chain and `OrderManager` dispatches it instead. |
+| **Factory** | `OrderFactory` was untouched across both weeks — no new order types introduced in Week 2, confirming the registry map correctly isolates creation from callers. |
+| **Command** | `UndoableCommandDecorator` delivered undo for all four command types by wrapping at the `dispatch()` site — zero individual command classes were modified, validating the Command pattern's encapsulation payoff. |
