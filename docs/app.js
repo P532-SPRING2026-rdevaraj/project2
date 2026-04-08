@@ -2,7 +2,7 @@
 // Week 2: update the production URL below after deploying to Render.
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:8080'
-  : 'https://hospital-order-system-week2.onrender.com';
+  : 'https://project2-week2.onrender.com';
 
 // ── Tab navigation ─────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
