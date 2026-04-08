@@ -3,14 +3,31 @@
 
 A hospital order management system built with Spring Boot (backend) and plain HTML/CSS/JS (frontend), applying The Method's four-layer architecture and five required design patterns.
 
+[![CI](https://github.com/P532-SPRING2026-rdevaraj/project2/actions/workflows/ci.yml/badge.svg?branch=week2)](https://github.com/P532-SPRING2026-rdevaraj/project2/actions/workflows/ci.yml)
+
 ---
 
-## Live Demo
+## Live Deployments
 
-| | URL |
-|---|---|
-| **Frontend** | https://project2-week2.onrender.com |
-| **Backend API** | https://hospital-order-system.onrender.com/api/orders |
+| | Week 1 (`main`) | Week 2 (`week2`) |
+|---|---|---|
+| **Full App** | https://p532-spring2026-rdevaraj.github.io/project2 | https://project2-week2.onrender.com |
+| **Backend API** | https://hospital-order-system.onrender.com/api/orders | https://project2-week2.onrender.com/api/orders |
+
+> **Note:** Render free-tier services spin down after 15 minutes of inactivity and may take up to 60 seconds to cold-start. This is expected.
+>
+> Week 2 serves both frontend and backend from the single Render URL (static files bundled into the Spring Boot jar).
+
+---
+
+## Week 2 Changes
+
+| Change | Description | Existing files modified |
+|---|---|---|
+| **Change 1** | Department-aware triage — 3 selectable strategies (Priority First, Load Balancing, Deadline First), switchable at runtime from the UI | 1 (`OrderManager`) |
+| **Change 2a** | Multi-channel notifications — Console, In-app badge, Email (mock); configurable via Settings panel | 0 |
+| **Change 2b** | Order processing decorators — Priority escalation (URGENT→STAT within 5 min window) + STAT audit logging | 1 (`Order`) |
+| **Change 3** | Command undo & replay — single-level undo via `UndoableCommandDecorator`; replay any past command from audit log | 1 (`OrderAccess`) |
 
 ---
 
@@ -23,9 +40,9 @@ A hospital order management system built with Spring Boot (backend) and plain HT
 | Persistence | In-memory (ConcurrentHashMap) |
 | Build | Maven |
 | Container | Docker (multi-stage) |
-| Deployment | Render.com (backend) + GitHub Pages (frontend) |
+| Deployment | Render.com |
 | CI/CD | GitHub Actions |
-| Testing | JUnit 5 + Mockito (25 tests) |
+| Testing | JUnit 5 + Mockito (45 tests) |
 
 ---
 
@@ -34,28 +51,27 @@ A hospital order management system built with Spring Boot (backend) and plain HT
 ```
 Project2/
 ├── Dockerfile                  ← multi-stage build (repo root)
-├── DESIGN.md                   ← design document
-├── backend/                    ← Spring Boot application
+├── DESIGN.md                   ← design document (Week 1 + Week 2)
+├── backend/
 │   ├── pom.xml
 │   └── src/
-│       ├── main/java/com/hospital/ordersystem/
-│       │   ├── access/         ← Resource Access layer
-│       │   ├── client/         ← REST controllers (Client layer)
-│       │   ├── command/        ← Command pattern
-│       │   ├── config/         ← CORS + observer wiring
-│       │   ├── decorator/      ← Decorator pattern
-│       │   ├── engine/         ← TriagingEngine (Engine layer)
-│       │   ├── factory/        ← Factory pattern
-│       │   ├── manager/        ← OrderManager (Manager layer)
-│       │   ├── model/          ← Domain model (Resource layer)
-│       │   ├── observer/       ← Observer pattern
-│       │   ├── strategy/       ← Strategy pattern
-│       │   └── utility/        ← NotificationService (Utility layer)
-│       └── test/               ← JUnit 5 + Mockito tests
-└── docs/                       ← Frontend (served via GitHub Pages)
-    ├── index.html
-    ├── style.css
-    └── app.js
+│       ├── main/
+│       │   ├── java/com/hospital/ordersystem/
+│       │   │   ├── access/         ← Resource Access layer
+│       │   │   ├── client/         ← REST controllers (Client layer)
+│       │   │   ├── command/        ← Command pattern
+│       │   │   ├── config/         ← Spring config (Clock, Strategies, CORS)
+│       │   │   ├── decorator/      ← Decorator pattern
+│       │   │   ├── engine/         ← TriagingEngine
+│       │   │   ├── factory/        ← Factory pattern
+│       │   │   ├── manager/        ← OrderManager (orchestrator)
+│       │   │   ├── model/          ← Domain model
+│       │   │   ├── observer/       ← Observer pattern
+│       │   │   ├── strategy/       ← Strategy pattern
+│       │   │   └── utility/        ← NotificationService + implementations
+│       │   └── resources/static/   ← Frontend (served by Spring Boot)
+│       └── test/                   ← JUnit 5 + Mockito (45 tests)
+└── docs/                       ← Frontend source (Week 1: GitHub Pages)
 ```
 
 ---
@@ -64,13 +80,11 @@ Project2/
 
 | Layer | Components |
 |---|---|
-| **Client** | `OrderController`, `AuditController` |
-| **Business Logic** | `OrderManager`, `TriagingEngine`, `OrderFactory`, all Command/Decorator/Observer classes |
+| **Client** | `OrderController`, `AuditController`, `TriageController`, `NotificationController`, `UndoController` |
+| **Business Logic** | `OrderManager`, `TriagingEngine`, `OrderFactory`, Commands, Decorators, Observers |
 | **Resource Access** | `OrderAccess`, `CommandLogAccess` |
 | **Resource** | `Order`, `LabOrder`, `MedicationOrder`, `ImagingOrder`, `CommandLogEntry` |
-| **Utility** | `NotificationService`, `ConsoleNotificationService` |
-
-> REST controllers contain zero business logic — they delegate immediately to `OrderManager`.
+| **Utility** | `NotificationService`, `CompositeNotificationService`, `ConsoleNotificationService`, `InAppNotificationService`, `EmailNotificationService` |
 
 ---
 
@@ -78,70 +92,42 @@ Project2/
 
 | Pattern | Key Classes | Justification |
 |---|---|---|
-| **Strategy** | `TriageStrategy`, `PriorityFirstTriageStrategy` | Swap triage algorithm at runtime without touching `TriagingEngine` |
+| **Strategy** | `TriageStrategy`, `PriorityFirstTriageStrategy`, `LoadBalancingTriageStrategy`, `DeadlineFirstTriageStrategy` | Swap triage algorithm at runtime without touching `TriagingEngine` |
 | **Observer** | `OrderEventPublisher`, `OrderObserver`, `NotificationObserver` | Add new reactions to order events with zero changes to existing classes |
-| **Decorator** | `OrderHandler`, `ValidationDecorator`, `AuditLoggingDecorator` | Stack processing steps around a base handler without modifying it |
+| **Decorator** | `OrderHandler`, `ValidationDecorator`, `AuditLoggingDecorator`, `PriorityEscalationDecorator`, `StatAuditDecorator` | Stack processing steps around a base handler without modifying it |
 | **Factory** | `OrderFactory`, `LabOrder`, `MedicationOrder`, `ImagingOrder` | Decouple callers from concrete order subtypes via a registry map |
-| **Command** | `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand` | Encapsulate actions as objects for queuing, logging, and Week 2 undo |
-
----
-
-## Core Use Cases
-
-### 1. Submit an Order
-```
-Browser → OrderController → OrderManager → OrderFactory
-       → SubmitOrderCommand → [ValidationDecorator → AuditLoggingDecorator]
-       → OrderAccess (save) → OrderEventPublisher → NotificationService
-       → CommandLogAccess (log)
-```
-
-### 2. Fulfil an Order (Claim → Complete)
-```
-Browser → OrderController → OrderManager → ClaimOrderCommand
-       → OrderAccess (find + update to IN_PROGRESS) → OrderEventPublisher
-       → CommandLogAccess (log)
-
-Browser → OrderController → OrderManager → CompleteOrderCommand
-       → OrderAccess (find + update to COMPLETED) → OrderEventPublisher
-       → CommandLogAccess (log)
-```
+| **Command** | `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand`, `UndoableCommandDecorator` | Encapsulate actions as objects; `UndoableCommandDecorator` adds undo to any command without modifying it |
 
 ---
 
 ## Running Locally
 
-### Backend
+### Option 1 — Maven (fastest)
 ```bash
 cd backend
 mvn spring-boot:run
-# API available at http://localhost:8080
+# Full app at http://localhost:8080
 ```
 
-### Frontend
+### Option 2 — Docker (matches Render exactly)
 ```bash
-cd docs
-python3 -m http.server 3000
-# Open http://localhost:3000
+docker build -t ordersystem .
+docker run -p 8080:8080 ordersystem
+# Full app at http://localhost:8080
 ```
 
-### Docker (from repo root)
-```bash
-docker build -t hospital-order-system .
-docker run -p 8080:8080 hospital-order-system
-```
-
-### Tests
+### Run Tests
 ```bash
 cd backend
 mvn test
-# 25 tests — JUnit 5 + Mockito
+# 45 tests — JUnit 5 + Mockito
 ```
 
 ---
 
 ## API Reference
 
+### Week 1 Endpoints
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/orders` | Get full order queue (triage-sorted) |
@@ -151,40 +137,29 @@ mvn test
 | `POST` | `/api/orders/{id}/cancel` | Cancel a pending order |
 | `GET` | `/api/audit` | Get command audit log |
 
-### Submit Order — Request Body
-```json
-{
-  "type": "LAB",
-  "patientName": "Alice Smith",
-  "clinician": "Dr. Jones",
-  "description": "CBC blood panel",
-  "priority": "STAT"
-}
-```
+### Week 2 Endpoints
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/triage/strategy` | Get current triage strategy |
+| `PUT` | `/api/triage/strategy` | Set triage strategy at runtime |
+| `GET` | `/api/notifications/preferences` | Get channel preferences |
+| `PUT` | `/api/notifications/preferences` | Update channel preferences |
+| `GET` | `/api/notifications/badge` | Get in-app badge count |
+| `POST` | `/api/notifications/badge/reset` | Reset badge count |
+| `POST` | `/api/orders/undo` | Undo last command |
+| `POST` | `/api/orders/replay/{index}` | Replay command from audit log |
 
 ---
 
-## UI Features
+## CI/CD Pipeline
 
-- **Order Queue** — sorted list of all orders (STAT → URGENT → ROUTINE), auto-refreshes every 3 seconds
-- **Submit Order** — form to create Lab, Medication, or Imaging orders
-- **Fulfilment Controls** — Claim and Complete buttons; staff ID required
-- **Audit Trail** — scrollable log of every command executed
+Three jobs run on every push to `main` or `week2`:
 
----
-
-## CI/CD
-
-GitHub Actions runs on every push to `main`:
-1. Build and test (`mvn verify`)
-2. Docker build from repo root (`docker build .`)
+| Job | What it does |
+|---|---|
+| `test` | Runs `mvn test`, uploads Surefire report as artifact |
+| `build` | Packages jar + builds Docker image |
+| `deploy-main` | Triggers Render deploy for Week 1 (on `main` push only) |
+| `deploy-week2` | Triggers Render deploy for Week 2 (on `week2` push only) |
 
 See [.github/workflows/ci.yml](.github/workflows/ci.yml)
-
----
-
-## Verbal Demo Answer
-
-> *"A new triage algorithm has been requested. Show us exactly where in your code that change lives and how many existing files you would touch."*
-
-**Answer:** Create one new file implementing `TriageStrategy` (e.g. `DepartmentTriageStrategy.java`). Touch **zero existing files** — call `triagingEngine.setTriageStrategy(new DepartmentTriageStrategy())` from a new endpoint or config. The Strategy interface, `TriagingEngine`, and `OrderManager` are all unchanged.
