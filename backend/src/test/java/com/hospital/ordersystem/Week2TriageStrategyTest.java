@@ -1,5 +1,6 @@
 package com.hospital.ordersystem;
 
+import com.hospital.ordersystem.access.OrderAccess;
 import com.hospital.ordersystem.factory.OrderFactory;
 import com.hospital.ordersystem.model.*;
 import com.hospital.ordersystem.strategy.DeadlineFirstTriageStrategy;
@@ -12,6 +13,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Covers Change 1 — LoadBalancingTriageStrategy and DeadlineFirstTriageStrategy.
@@ -25,7 +27,9 @@ class Week2TriageStrategyTest {
     @Test
     void loadBalancing_sortsBySubmissionTimeFIFO() {
         // Arrange
-        LoadBalancingTriageStrategy strategy = new LoadBalancingTriageStrategy();
+        OrderAccess orderAccess = mock(OrderAccess.class);
+        when(orderAccess.listAllOrders()).thenReturn(List.of());
+        LoadBalancingTriageStrategy strategy = new LoadBalancingTriageStrategy(orderAccess);
         Order stat    = factory.createOrder(OrderType.LAB,      "P1", "Dr. A", "d", OrderPriority.STAT);
         Order routine = factory.createOrder(OrderType.IMAGING,  "P2", "Dr. B", "d", OrderPriority.ROUTINE);
         Order urgent  = factory.createOrder(OrderType.MEDICATION,"P3", "Dr. C", "d", OrderPriority.URGENT);
@@ -42,7 +46,9 @@ class Week2TriageStrategyTest {
     @Test
     void loadBalancing_ignoresPriority() {
         // Arrange
-        LoadBalancingTriageStrategy strategy = new LoadBalancingTriageStrategy();
+        OrderAccess orderAccess = mock(OrderAccess.class);
+        when(orderAccess.listAllOrders()).thenReturn(List.of());
+        LoadBalancingTriageStrategy strategy = new LoadBalancingTriageStrategy(orderAccess);
         Order routine = factory.createOrder(OrderType.LAB, "P1", "Dr. A", "d", OrderPriority.ROUTINE);
         Order stat    = factory.createOrder(OrderType.LAB, "P2", "Dr. B", "d", OrderPriority.STAT);
 

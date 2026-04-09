@@ -1,5 +1,6 @@
 package com.hospital.ordersystem.config;
 
+import com.hospital.ordersystem.access.OrderAccess;
 import com.hospital.ordersystem.strategy.DeadlineFirstTriageStrategy;
 import com.hospital.ordersystem.strategy.LoadBalancingTriageStrategy;
 import com.hospital.ordersystem.strategy.PriorityFirstTriageStrategy;
@@ -20,8 +21,8 @@ public class StrategyConfig {
     }
 
     @Bean("LOAD_BALANCING")
-    TriageStrategy loadBalancingStrategy() {
-        return new LoadBalancingTriageStrategy();
+    TriageStrategy loadBalancingStrategy(OrderAccess orderAccess) {
+        return new LoadBalancingTriageStrategy(orderAccess);
     }
 
     @Bean("DEADLINE_FIRST")
