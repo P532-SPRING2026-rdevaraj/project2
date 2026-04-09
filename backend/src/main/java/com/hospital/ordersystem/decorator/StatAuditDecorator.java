@@ -28,13 +28,11 @@ public class StatAuditDecorator extends OrderHandlerDecorator {
                     .filter(o -> o.getPriority() == OrderPriority.STAT
                               && o.getType() == processed.getType())
                     .count() + 1;
-            String detail = String.format("type=%s|stat_count=%d",
-                    processed.getType(), statCount);
             commandLogAccess.append(
-                    new CommandLogEntry("STAT_AUDIT", processed.getOrderId(), detail));
+                    new CommandLogEntry("STAT_AUDIT", processed.getOrderId(), processed.getClinician()));
             System.out.printf(
-                    "[STAT_AUDIT] STAT order %s | Type: %s | Running STAT count for type: %d%n",
-                    processed.getOrderId(), processed.getType(), statCount);
+                    "[STAT_AUDIT] STAT order %s | Type: %s | Clinician: %s | Running STAT count for type: %d%n",
+                    processed.getOrderId(), processed.getType(), processed.getClinician(), statCount);
         }
         return processed;
     }

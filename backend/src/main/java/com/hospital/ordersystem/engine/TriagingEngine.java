@@ -24,15 +24,21 @@ public class TriagingEngine {
     }
 
     public List<Order> getAllOrders() {
-        return orderAccess.listAllOrders().stream()
+        List<Order> all = orderAccess.listAllOrders();
+
+        List<Order> pending = triageStrategy.sort(
+                all.stream().filter(o -> o.getStatus() == OrderStatus.PENDING).toList());
+
+        List<Order> rest = all.stream()
+                .filter(o -> o.getStatus() != OrderStatus.PENDING)
                 .sorted((a, b) -> {
                     int statusOrder = statusRank(a.getStatus()) - statusRank(b.getStatus());
                     if (statusOrder != 0) return statusOrder;
-                    int priorityOrder = b.getPriority().getLevel() - a.getPriority().getLevel();
-                    if (priorityOrder != 0) return priorityOrder;
                     return a.getSubmittedAt().compareTo(b.getSubmittedAt());
                 })
                 .toList();
+
+        return java.util.stream.Stream.concat(pending.stream(), rest.stream()).toList();
     }
 
     public void requeue() {}
