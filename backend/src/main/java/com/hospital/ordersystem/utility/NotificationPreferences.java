@@ -4,10 +4,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Stores per-channel notification preferences.  Defaults: console ON,
- * in-app ON, email OFF (consistent with the Week-1 behaviour of console-only).
- */
 @Component
 public class NotificationPreferences {
 

@@ -4,12 +4,6 @@ import com.hospital.ordersystem.model.Order;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-/**
- * Composite notification service (Decorator pattern over channels).
- * Marked @Primary so NotificationObserver receives this bean instead of
- * ConsoleNotificationService.  Delegates to each active channel based on
- * the per-role NotificationPreferences singleton.
- */
 @Component
 @Primary
 public class CompositeNotificationService implements NotificationService {

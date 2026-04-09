@@ -25,7 +25,6 @@ public class OrderManager {
     private final Clock clock;
     private final Map<String, TriageStrategy> strategies;
 
-    // Single-level undo stack (spec: "only the most recent command")
     private OrderCommand lastCommand;
     private String currentStrategyName = "PRIORITY_FIRST";
 
@@ -45,8 +44,6 @@ public class OrderManager {
         this.strategies = strategies;
     }
 
-    // ── Core use-case 1: Submit ───────────────────────────────────────────────
-
     public Order submitOrder(OrderType type, String patientName, String clinician,
                              String description, OrderPriority priority) {
         Order order = orderFactory.createOrder(type, patientName, clinician, description, priority);
@@ -54,8 +51,6 @@ public class OrderManager {
                 eventPublisher, clock, commandLogAccess));
         return order;
     }
-
-    // ── Core use-case 2: Fulfil ───────────────────────────────────────────────
 
     public void claimOrder(String orderId, String staffMember) {
         dispatch(new ClaimOrderCommand(orderId, staffMember, orderAccess, eventPublisher));
@@ -65,13 +60,9 @@ public class OrderManager {
         dispatch(new CompleteOrderCommand(orderId, staffMember, orderAccess, eventPublisher));
     }
 
-    // ── Cancel ────────────────────────────────────────────────────────────────
-
     public void cancelOrder(String orderId, String clinician) {
         dispatch(new CancelOrderCommand(orderId, clinician, orderAccess, eventPublisher));
     }
-
-    // ── Query ─────────────────────────────────────────────────────────────────
 
     public List<Order> getQueue() {
         return triagingEngine.getAllOrders();
@@ -80,8 +71,6 @@ public class OrderManager {
     public List<CommandLogEntry> getCommandLog() {
         return commandLogAccess.getAll();
     }
-
-    // ── Change 1: Triage strategy selection ──────────────────────────────────
 
     public void setTriageStrategy(String strategyName) {
         String key = strategyName.toUpperCase();
@@ -101,8 +90,6 @@ public class OrderManager {
         return currentStrategyName;
     }
 
-    // ── Change 3: Undo ────────────────────────────────────────────────────────
-
     public void undoLastCommand() {
         if (lastCommand == null) {
             throw new IllegalStateException("No command to undo.");
@@ -112,8 +99,6 @@ public class OrderManager {
                 new CommandLogEntry("UNDO", lastCommand.getOrderId(), lastCommand.getActor()));
         lastCommand = null;
     }
-
-    // ── Change 3: Replay ─────────────────────────────────────────────────────
 
     public void replayCommand(int index) {
         List<CommandLogEntry> log = commandLogAccess.getAll();
@@ -143,11 +128,7 @@ public class OrderManager {
         dispatch(cmd);
     }
 
-    // ── Internal dispatch ─────────────────────────────────────────────────────
-
     private void dispatch(OrderCommand cmd) {
-        // Wrap every command in UndoableCommandDecorator so undo() works
-        // without modifying any individual command class.
         UndoableCommandDecorator undoable = new UndoableCommandDecorator(cmd, orderAccess);
         undoable.execute();
         commandLogAccess.append(

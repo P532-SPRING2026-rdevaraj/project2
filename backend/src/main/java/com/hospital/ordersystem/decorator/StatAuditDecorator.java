@@ -6,11 +6,6 @@ import com.hospital.ordersystem.model.CommandLogEntry;
 import com.hospital.ordersystem.model.Order;
 import com.hospital.ordersystem.model.OrderPriority;
 
-/**
- * STAT audit decorator: when the processed order is STAT, records extra
- * detail in the command log — total STAT orders of that type and the
- * order's escalation state — and prints a structured console summary.
- */
 public class StatAuditDecorator extends OrderHandlerDecorator {
 
     private final OrderAccess orderAccess;
@@ -26,15 +21,13 @@ public class StatAuditDecorator extends OrderHandlerDecorator {
 
     @Override
     public Order handle(Order order) {
-        // Act: run full inner chain (validate → log → escalate)
         Order processed = wrapped.handle(order);
 
-        // Assert/Record: if STAT, append extra audit detail
         if (processed.getPriority() == OrderPriority.STAT) {
             long statCount = orderAccess.listAllOrders().stream()
                     .filter(o -> o.getPriority() == OrderPriority.STAT
                               && o.getType() == processed.getType())
-                    .count() + 1; // +1 for the order being submitted now
+                    .count() + 1;
             String detail = String.format("type=%s|stat_count=%d",
                     processed.getType(), statCount);
             commandLogAccess.append(

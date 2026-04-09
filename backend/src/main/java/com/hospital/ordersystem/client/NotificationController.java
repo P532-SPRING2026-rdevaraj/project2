@@ -7,10 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * Client layer — exposes notification preferences and badge counter.
- * Contains no business logic.
- */
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {

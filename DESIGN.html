@@ -1,24 +1,74 @@
-# Design Document — Hospital Order Management System
-**CSCI-P532 | Spring 2026 | Rohith Gowda Devaraju**
-
----
-
-## Submission URLs
-
-| Item | URL |
-|---|---|
-| **GitHub Repository** | https://github.com/P532-SPRING2026-rdevaraj/project2 |
-| **Week 1 — Live App** | https://p532-spring2026-rdevaraj.github.io/project2 |
-| **Week 1 — Backend API** | https://hospital-order-system.onrender.com |
-| **Week 2 — Live App (branch: week2)** | https://project2-week2.onrender.com |
-| **Week 2 — Backend API** | https://project2-week2.onrender.com/api/orders |
-
----
-
-## 1. Layered Component Diagram
-
-```
-╔══════════════════════════════════════════════════════════════════════════════╗
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DESIGN</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="" />
+</head>
+<body>
+<h1 id="design-document-hospital-order-management-system">Design
+Document — Hospital Order Management System</h1>
+<p><strong>CSCI-P532 | Spring 2026 | Rohith Gowda Devaraju</strong></p>
+<hr />
+<h2 id="submission-urls">Submission URLs</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GitHub Repository</strong></td>
+<td>https://github.com/P532-SPRING2026-rdevaraj/project2</td>
+</tr>
+<tr>
+<td><strong>Week 1 — Live App</strong></td>
+<td>https://p532-spring2026-rdevaraj.github.io/project2</td>
+</tr>
+<tr>
+<td><strong>Week 1 — Backend API</strong></td>
+<td>https://hospital-order-system.onrender.com</td>
+</tr>
+<tr>
+<td><strong>Week 2 — Live App (branch: week2)</strong></td>
+<td>https://project2-week2.onrender.com</td>
+</tr>
+<tr>
+<td><strong>Week 2 — Backend API</strong></td>
+<td>https://project2-week2.onrender.com/api/orders</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="layered-component-diagram">1. Layered Component Diagram</h2>
+<pre><code>╔══════════════════════════════════════════════════════════════════════════════╗
 ║                              CLIENT LAYER                                    ║
 ║                                                                              ║
 ║  OrderController        AuditController     TriageController   (Week 2)      ║
@@ -93,17 +143,11 @@
 ║  InAppNotificationService         (Week 2 — badge counter)                   ║
 ║  EmailNotificationService         (Week 2 — mock email)                      ║
 ║  NotificationPreferences          (Week 2 — per-channel on/off flags)        ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-```
-
----
-
-## 2. Call Chain Diagrams
-
-### Use Case 1 — Submit an Order
-
-```
-Clinician (Browser)
+╚══════════════════════════════════════════════════════════════════════════════╝</code></pre>
+<hr />
+<h2 id="call-chain-diagrams">2. Call Chain Diagrams</h2>
+<h3 id="use-case-1-submit-an-order">Use Case 1 — Submit an Order</h3>
+<pre><code>Clinician (Browser)
       │  POST /api/orders  {type, patientName, clinician, description, priority}
       ▼
 OrderController                                            [CLIENT]
@@ -135,7 +179,7 @@ OrderAccess                                                [RESOURCE ACCESS]
       ▼
 In-Memory Store                                            [RESOURCE]
       ◄─────────────────────────────────────────────────────────────
-      │  eventPublisher.publish(order, "ORDER_SUBMITTED")
+      │  eventPublisher.publish(order, &quot;ORDER_SUBMITTED&quot;)
       ▼
 OrderEventPublisher → NotificationObserver                 [OBSERVER]
       │                  → compositeNotificationService.notify(order, event)
@@ -145,112 +189,270 @@ CompositeNotificationService                               [UTILITY]
       │  → InAppNotificationService   (if enabled — increments badge)
       │  → EmailNotificationService   (if enabled — logs mock email)
       ◄─────────────────────────────────────────────────────────────
-      │  commandLogAccess.append(CommandLogEntry("SUBMIT", orderId, actor))
+      │  commandLogAccess.append(CommandLogEntry(&quot;SUBMIT&quot;, orderId, actor))
       ▼
 CommandLogAccess                                           [RESOURCE ACCESS]
       ◄─────────────────────────────────────────────────────────────
-OrderManager returns Order → OrderController returns 200 OK {OrderDto}
-```
-
----
-
-### Use Case 2 — Fulfil an Order (Claim → Complete)
-
-```
-Staff Member (Browser)
-      │  POST /api/orders/{id}/claim  {actor: "Tech-1"}
+OrderManager returns Order → OrderController returns 200 OK {OrderDto}</code></pre>
+<hr />
+<h3 id="use-case-2-fulfil-an-order-claim-complete">Use Case 2 — Fulfil
+an Order (Claim → Complete)</h3>
+<pre><code>Staff Member (Browser)
+      │  POST /api/orders/{id}/claim  {actor: &quot;Tech-1&quot;}
       ▼
 OrderController                                            [CLIENT]
-      │  orderManager.claimOrder(orderId, "Tech-1")
+      │  orderManager.claimOrder(orderId, &quot;Tech-1&quot;)
       ▼
 OrderManager                                               [MANAGER]
-      │  new ClaimOrderCommand(orderId, "Tech-1", orderAccess, eventPublisher)
+      │  new ClaimOrderCommand(orderId, &quot;Tech-1&quot;, orderAccess, eventPublisher)
       │  dispatch(cmd) → UndoableCommandDecorator snapshots PENDING state
       │  → cmd.execute()
       ▼
 ClaimOrderCommand.execute()                                [COMMAND]
       │  a. orderAccess.findOrderById(orderId) → Order
       │  b. guard: status == PENDING, claimedBy == null
-      │  c. order.setStatus(IN_PROGRESS), order.setClaimedBy("Tech-1")
+      │  c. order.setStatus(IN_PROGRESS), order.setClaimedBy(&quot;Tech-1&quot;)
       │  d. orderAccess.saveOrder(order)
-      │  e. eventPublisher.publish(order, "ORDER_CLAIMED")
+      │  e. eventPublisher.publish(order, &quot;ORDER_CLAIMED&quot;)
       ▼
 CompositeNotificationService                               [UTILITY]
       │     notifies all active channels
       ◄─────────────────────────────────────────────────────────────
-      │  commandLogAccess.append(CommandLogEntry("CLAIM", orderId, "Tech-1"))
+      │  commandLogAccess.append(CommandLogEntry(&quot;CLAIM&quot;, orderId, &quot;Tech-1&quot;))
       ◄─────────────────────────────────────────────────────────────
 OrderController returns 200 OK
 
       ─── Staff clicks Complete ────────────────────────────────────
 
-      │  POST /api/orders/{id}/complete  {actor: "Tech-1"}
+      │  POST /api/orders/{id}/complete  {actor: &quot;Tech-1&quot;}
       ▼
 OrderController → OrderManager                             [CLIENT → MANAGER]
-      │  new CompleteOrderCommand(orderId, "Tech-1", orderAccess, eventPublisher)
+      │  new CompleteOrderCommand(orderId, &quot;Tech-1&quot;, orderAccess, eventPublisher)
       │  dispatch(cmd) → UndoableCommandDecorator snapshots IN_PROGRESS state
       ▼
 CompleteOrderCommand.execute()                             [COMMAND]
       │  a. orderAccess.findOrderById(orderId) → Order
-      │  b. guard: status == IN_PROGRESS, claimedBy == "Tech-1"
+      │  b. guard: status == IN_PROGRESS, claimedBy == &quot;Tech-1&quot;
       │  c. order.setStatus(COMPLETED)
       │  d. orderAccess.saveOrder(order)
-      │  e. eventPublisher.publish(order, "ORDER_COMPLETED")
-      │  f. commandLogAccess.append(CommandLogEntry("COMPLETE", orderId, "Tech-1"))
+      │  e. eventPublisher.publish(order, &quot;ORDER_COMPLETED&quot;)
+      │  f. commandLogAccess.append(CommandLogEntry(&quot;COMPLETE&quot;, orderId, &quot;Tech-1&quot;))
       ◄─────────────────────────────────────────────────────────────
 OrderController returns 200 OK
-Staff Member sees order status updated on next 3-second poll
-```
-
----
-
-## 3. Design Pattern Justifications
-
-| Pattern | Classes Involved | Layer | One-Sentence Justification |
-|---|---|---|---|
-| **Strategy** | `TriageStrategy` (interface), `PriorityFirstTriageStrategy`, `LoadBalancingTriageStrategy`, `DeadlineFirstTriageStrategy` | Business Logic | Encapsulates interchangeable triage algorithms behind a common interface so the active policy can be swapped at runtime via `TriagingEngine.setTriageStrategy()` without modifying `OrderManager` or `TriagingEngine`. |
-| **Observer** | `OrderObserver` (interface), `OrderEventPublisher`, `NotificationObserver`, `NotificationService` | Business Logic / Utility | Decouples order state changes from the components that react to them so new notification channels (in-app badge, email) are added as new classes in Week 2 with zero changes to `OrderManager` or any command object. |
-| **Decorator** | `OrderHandler` (interface), `BaseOrderHandler`, `OrderHandlerDecorator`, `ValidationDecorator`, `AuditLoggingDecorator`, `PriorityEscalationDecorator`, `StatAuditDecorator` | Business Logic | Stacks order-processing steps transparently around a base handler so Week 2 escalation and audit steps are added in a new command class (`StatAwareSubmitOrderCommand`) with zero changes to existing decorators or `SubmitOrderCommand`. |
-| **Factory** | `OrderFactory`, `OrderCreator` (functional interface), `LabOrder`, `MedicationOrder`, `ImagingOrder` | Business Logic | Centralises order-subtype creation in a registry map so callers are fully decoupled from concrete classes and a new order type requires adding one registry entry with no changes to `OrderManager` or any controller. |
-| **Command** | `OrderCommand` (interface), `SubmitOrderCommand`, `ClaimOrderCommand`, `CompleteOrderCommand`, `CancelOrderCommand`, `UndoableCommandDecorator` | Business Logic | Encapsulates each order action as a self-contained object so `OrderManager` can dispatch, log, and undo any action; in Week 2 a single `UndoableCommandDecorator` adds undo by snapshotting state before `execute()` without touching any individual command class. |
-
----
-
-## 4. Week 2 — Pre-Existing Files Modified Per Change
-
-| Change | Files Modified | Count |
-|---|---|---|
-| **Change 1 — Department-Aware Triage** | `OrderManager.java` (added `setTriageStrategy`, `getTriageStrategyName`, `Clock` + strategy map to constructor) | **1** |
-| **Change 2a — Multi-Channel Notifications** | *(none)* | **0** |
-| **Change 2b — Order Processing Decorators** | `Order.java` (removed `final` from `priority` field, added `setPriority()` — priority was incorrectly immutable in Week 1) | **1** |
-| **Change 3 — Command Undo and Replay** | `OrderAccess.java` (added `deleteOrder()` needed for SUBMIT undo; `OrderManager` already counted in Change 1) | **1** |
-
-**Total pre-existing files modified across all four changes: 3**
-(`OrderManager`, `Order`, `OrderAccess` — each touched exactly once)
-
-### How the low count was achieved
-
-- **Change 1**: `StrategyConfig` (new file) re-exposes `PriorityFirstTriageStrategy` as `@Primary` — so that existing file is untouched despite Spring now having 3 `TriageStrategy` beans.
-- **Change 2a**: `CompositeNotificationService` (new, `@Primary`) is injected into the existing `NotificationObserver` automatically — zero existing files touched.
-- **Change 2b**: `StatAwareSubmitOrderCommand` (new file) carries the Week 2 decorator chain — `SubmitOrderCommand` is untouched at its Week 1 state.
-- **Change 3**: `UndoableCommandDecorator` (new file) snapshots state before any command executes and restores on `undo()` — zero individual command classes modified. `UndoController` (new file) handles the HTTP endpoints — `OrderController` untouched.
-
----
-
-## 5. Volatility Missed in Week 1
-
-**What was missed:** `Order.priority` was declared `final`, treating priority as immutable after construction. The `PriorityEscalationDecorator` (Change 2b) must mutate priority at processing time, requiring `final` to be removed and `setPriority()` to be added — one file modified that ideally should have been zero.
-
-**What I would do differently:** Separate the clinician's submitted priority (immutable) from the system's effective priority (mutable by the processing chain) — either via a `ProcessedOrder` wrapper or a second `effectivePriority` field — keeping the domain model immutable below the business-logic layer.
-
----
-
-## 6. Pattern Audit (Week 2)
-
-| Pattern | Result |
-|---|---|
-| **Strategy** | Adding two new strategies required zero changes to `TriagingEngine` or `OrderManager` — new implementations plus a `StrategyConfig` bean file were sufficient. The interface fully absorbed Change 1's volatility. |
-| **Observer** | Adding three notification channels required zero changes to `OrderManager`, `OrderEventPublisher`, or `NotificationObserver`. `@Primary` on `CompositeNotificationService` redirected the chain automatically. |
-| **Decorator** | Adding escalation and audit decorators required zero changes to `SubmitOrderCommand` or existing decorators — a new `StatAwareSubmitOrderCommand` carries the extended chain and `OrderManager` dispatches it instead. |
-| **Factory** | `OrderFactory` was untouched across both weeks — no new order types introduced in Week 2, confirming the registry map correctly isolates creation from callers. |
-| **Command** | `UndoableCommandDecorator` delivered undo for all four command types by wrapping at the `dispatch()` site — zero individual command classes were modified, validating the Command pattern's encapsulation payoff. |
+Staff Member sees order status updated on next 3-second poll</code></pre>
+<hr />
+<h2 id="design-pattern-justifications">3. Design Pattern
+Justifications</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Classes Involved</th>
+<th>Layer</th>
+<th>One-Sentence Justification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Strategy</strong></td>
+<td><code>TriageStrategy</code> (interface),
+<code>PriorityFirstTriageStrategy</code>,
+<code>LoadBalancingTriageStrategy</code>,
+<code>DeadlineFirstTriageStrategy</code></td>
+<td>Business Logic</td>
+<td>Encapsulates interchangeable triage algorithms behind a common
+interface so the active policy can be swapped at runtime via
+<code>TriagingEngine.setTriageStrategy()</code> without modifying
+<code>OrderManager</code> or <code>TriagingEngine</code>.</td>
+</tr>
+<tr>
+<td><strong>Observer</strong></td>
+<td><code>OrderObserver</code> (interface),
+<code>OrderEventPublisher</code>, <code>NotificationObserver</code>,
+<code>NotificationService</code></td>
+<td>Business Logic / Utility</td>
+<td>Decouples order state changes from the components that react to them
+so new notification channels (in-app badge, email) are added as new
+classes in Week 2 with zero changes to <code>OrderManager</code> or any
+command object.</td>
+</tr>
+<tr>
+<td><strong>Decorator</strong></td>
+<td><code>OrderHandler</code> (interface),
+<code>BaseOrderHandler</code>, <code>OrderHandlerDecorator</code>,
+<code>ValidationDecorator</code>, <code>AuditLoggingDecorator</code>,
+<code>PriorityEscalationDecorator</code>,
+<code>StatAuditDecorator</code></td>
+<td>Business Logic</td>
+<td>Stacks order-processing steps transparently around a base handler so
+Week 2 escalation and audit steps are added in a new command class
+(<code>StatAwareSubmitOrderCommand</code>) with zero changes to existing
+decorators or <code>SubmitOrderCommand</code>.</td>
+</tr>
+<tr>
+<td><strong>Factory</strong></td>
+<td><code>OrderFactory</code>, <code>OrderCreator</code> (functional
+interface), <code>LabOrder</code>, <code>MedicationOrder</code>,
+<code>ImagingOrder</code></td>
+<td>Business Logic</td>
+<td>Centralises order-subtype creation in a registry map so callers are
+fully decoupled from concrete classes and a new order type requires
+adding one registry entry with no changes to <code>OrderManager</code>
+or any controller.</td>
+</tr>
+<tr>
+<td><strong>Command</strong></td>
+<td><code>OrderCommand</code> (interface),
+<code>SubmitOrderCommand</code>, <code>ClaimOrderCommand</code>,
+<code>CompleteOrderCommand</code>, <code>CancelOrderCommand</code>,
+<code>UndoableCommandDecorator</code></td>
+<td>Business Logic</td>
+<td>Encapsulates each order action as a self-contained object so
+<code>OrderManager</code> can dispatch, log, and undo any action; in
+Week 2 a single <code>UndoableCommandDecorator</code> adds undo by
+snapshotting state before <code>execute()</code> without touching any
+individual command class.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="week-2-pre-existing-files-modified-per-change">4. Week 2 —
+Pre-Existing Files Modified Per Change</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Change</th>
+<th>Files Modified</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Change 1 — Department-Aware Triage</strong></td>
+<td><code>OrderManager.java</code> (added
+<code>setTriageStrategy</code>, <code>getTriageStrategyName</code>,
+<code>Clock</code> + strategy map to constructor)</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td><strong>Change 2a — Multi-Channel Notifications</strong></td>
+<td><em>(none)</em></td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td><strong>Change 2b — Order Processing Decorators</strong></td>
+<td><code>Order.java</code> (removed <code>final</code> from
+<code>priority</code> field, added <code>setPriority()</code> — priority
+was incorrectly immutable in Week 1)</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td><strong>Change 3 — Command Undo and Replay</strong></td>
+<td><code>OrderAccess.java</code> (added <code>deleteOrder()</code>
+needed for SUBMIT undo; <code>OrderManager</code> already counted in
+Change 1)</td>
+<td><strong>1</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total pre-existing files modified across all four changes:
+3</strong> (<code>OrderManager</code>, <code>Order</code>,
+<code>OrderAccess</code> — each touched exactly once)</p>
+<h3 id="how-the-low-count-was-achieved">How the low count was
+achieved</h3>
+<ul>
+<li><strong>Change 1</strong>: <code>StrategyConfig</code> (new file)
+re-exposes <code>PriorityFirstTriageStrategy</code> as
+<code>@Primary</code> — so that existing file is untouched despite
+Spring now having 3 <code>TriageStrategy</code> beans.</li>
+<li><strong>Change 2a</strong>:
+<code>CompositeNotificationService</code> (new, <code>@Primary</code>)
+is injected into the existing <code>NotificationObserver</code>
+automatically — zero existing files touched.</li>
+<li><strong>Change 2b</strong>: <code>StatAwareSubmitOrderCommand</code>
+(new file) carries the Week 2 decorator chain —
+<code>SubmitOrderCommand</code> is untouched at its Week 1 state.</li>
+<li><strong>Change 3</strong>: <code>UndoableCommandDecorator</code>
+(new file) snapshots state before any command executes and restores on
+<code>undo()</code> — zero individual command classes modified.
+<code>UndoController</code> (new file) handles the HTTP endpoints —
+<code>OrderController</code> untouched.</li>
+</ul>
+<hr />
+<h2 id="volatility-missed-in-week-1">5. Volatility Missed in Week 1</h2>
+<p><strong>What was missed:</strong> <code>Order.priority</code> was
+declared <code>final</code>, treating priority as immutable after
+construction. The <code>PriorityEscalationDecorator</code> (Change 2b)
+must mutate priority at processing time, requiring <code>final</code> to
+be removed and <code>setPriority()</code> to be added — one file
+modified that ideally should have been zero.</p>
+<p><strong>What I would do differently:</strong> Separate the
+clinician’s submitted priority (immutable) from the system’s effective
+priority (mutable by the processing chain) — either via a
+<code>ProcessedOrder</code> wrapper or a second
+<code>effectivePriority</code> field — keeping the domain model
+immutable below the business-logic layer.</p>
+<hr />
+<h2 id="pattern-audit-week-2">6. Pattern Audit (Week 2)</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Strategy</strong></td>
+<td>Adding two new strategies required zero changes to
+<code>TriagingEngine</code> or <code>OrderManager</code> — new
+implementations plus a <code>StrategyConfig</code> bean file were
+sufficient. The interface fully absorbed Change 1’s volatility.</td>
+</tr>
+<tr>
+<td><strong>Observer</strong></td>
+<td>Adding three notification channels required zero changes to
+<code>OrderManager</code>, <code>OrderEventPublisher</code>, or
+<code>NotificationObserver</code>. <code>@Primary</code> on
+<code>CompositeNotificationService</code> redirected the chain
+automatically.</td>
+</tr>
+<tr>
+<td><strong>Decorator</strong></td>
+<td>Adding escalation and audit decorators required zero changes to
+<code>SubmitOrderCommand</code> or existing decorators — a new
+<code>StatAwareSubmitOrderCommand</code> carries the extended chain and
+<code>OrderManager</code> dispatches it instead.</td>
+</tr>
+<tr>
+<td><strong>Factory</strong></td>
+<td><code>OrderFactory</code> was untouched across both weeks — no new
+order types introduced in Week 2, confirming the registry map correctly
+isolates creation from callers.</td>
+</tr>
+<tr>
+<td><strong>Command</strong></td>
+<td><code>UndoableCommandDecorator</code> delivered undo for all four
+command types by wrapping at the <code>dispatch()</code> site — zero
+individual command classes were modified, validating the Command
+pattern’s encapsulation payoff.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

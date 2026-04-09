@@ -6,10 +6,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * Client layer — exposes triage strategy selection to the UI.
- * Contains no business logic; delegates immediately to OrderManager.
- */
 @RestController
 @RequestMapping("/api/triage")
 public class TriageController {

@@ -6,10 +6,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * Client layer — exposes the Command undo and replay operations.
- * Contains no business logic; delegates immediately to OrderManager.
- */
 @RestController
 @RequestMapping("/api/orders")
 public class UndoController {
@@ -20,7 +16,6 @@ public class UndoController {
         this.orderManager = orderManager;
     }
 
-    /** Undo the most recently executed command (single-level undo). */
     @PostMapping("/undo")
     public ResponseEntity<?> undoLastCommand() {
         try {
@@ -31,7 +26,6 @@ public class UndoController {
         }
     }
 
-    /** Re-execute a past command from the audit log by its 0-based index. */
     @PostMapping("/replay/{logIndex}")
     public ResponseEntity<?> replayCommand(@PathVariable int logIndex) {
         try {

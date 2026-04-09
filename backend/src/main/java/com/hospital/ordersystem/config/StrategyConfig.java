@@ -10,14 +10,6 @@ import org.springframework.context.annotation.Primary;
 
 import java.time.Clock;
 
-/**
- * Registers all three TriageStrategy implementations as named beans so
- * OrderManager can look them up by strategy name at runtime.
- *
- * The PRIORITY_FIRST bean delegates to the existing @Component and is marked
- * @Primary so TriagingEngine's constructor injection resolves unambiguously
- * without any modification to PriorityFirstTriageStrategy or TriagingEngine.
- */
 @Configuration
 public class StrategyConfig {
 

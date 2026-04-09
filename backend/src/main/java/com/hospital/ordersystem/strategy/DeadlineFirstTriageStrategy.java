@@ -9,16 +9,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Deadline-first triage: each order is assigned a deadline based on its
- * priority. The queue is sorted by ascending time-to-deadline so the most
- * overdue work surfaces first.
- *
- * Deadlines (from submission time):
- *   STAT    → 30 minutes
- *   URGENT  → 2 hours
- *   ROUTINE → 8 hours
- */
 @Component
 public class DeadlineFirstTriageStrategy implements TriageStrategy {
 

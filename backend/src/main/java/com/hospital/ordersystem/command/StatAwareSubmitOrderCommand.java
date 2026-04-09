@@ -9,16 +9,6 @@ import com.hospital.ordersystem.observer.OrderEventPublisher;
 
 import java.time.Clock;
 
-/**
- * Week 2 submit command — extends the Week 1 decorator chain with two extra
- * steps added without touching SubmitOrderCommand:
- *
- *   StatAuditDecorator
- *     → PriorityEscalationDecorator
- *         → AuditLoggingDecorator
- *             → ValidationDecorator
- *                 → BaseOrderHandler
- */
 public class StatAwareSubmitOrderCommand implements OrderCommand {
 
     private final Order order;

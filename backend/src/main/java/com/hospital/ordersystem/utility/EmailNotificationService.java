@@ -5,10 +5,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
-/**
- * Mock e-mail notification channel: formats and logs a structured e-mail
- * message to stdout (no real SMTP is involved).
- */
 @Component
 public class EmailNotificationService implements NotificationService {
 

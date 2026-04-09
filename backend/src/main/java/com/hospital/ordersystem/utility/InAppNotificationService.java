@@ -5,10 +5,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * In-app notification channel: increments a badge counter that the UI
- * polls via GET /api/notifications/badge.
- */
 @Component
 public class InAppNotificationService implements NotificationService {
 
