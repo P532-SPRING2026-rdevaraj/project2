@@ -2,6 +2,7 @@ package com.hospital.ordersystem;
 
 import com.hospital.ordersystem.access.CommandLogAccess;
 import com.hospital.ordersystem.access.OrderAccess;
+import com.hospital.ordersystem.access.StaffAccess;
 import com.hospital.ordersystem.engine.TriagingEngine;
 import com.hospital.ordersystem.factory.OrderFactory;
 import com.hospital.ordersystem.manager.OrderManager;
@@ -38,7 +39,7 @@ class CommandUndoTest {
                 Map.of("priorityFirstTriageStrategy", strategy);
 
         orderManager = new OrderManager(factory, orderAccess, commandLogAccess,
-                triagingEngine, eventPublisher, Clock.systemDefaultZone(), strategies);
+                triagingEngine, eventPublisher, Clock.systemDefaultZone(), strategies, new StaffAccess());
     }
 
     // ── CancelCommand undo ────────────────────────────────────────────────────

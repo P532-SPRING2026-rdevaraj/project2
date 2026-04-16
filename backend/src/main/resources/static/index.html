@@ -52,9 +52,10 @@
 
       <!-- Fulfilment identity + Undo -->
       <div class="identity-bar">
-        <label>Staff ID (for claim / complete):
+        <label id="staff-id-label">Staff ID (for complete / cancel):
           <input id="staff-id" type="text" placeholder="e.g. Tech-1" />
         </label>
+        <button id="lb-auto-assign-btn" class="btn btn-primary hidden" title="Assign all pending orders to least-loaded staff">Auto-Assign Pending</button>
         <button id="undo-btn" class="btn btn-undo" title="Undo last command">↩ Undo Last</button>
       </div>
     </section>
@@ -114,7 +115,21 @@
 
     <!-- ─── Settings ─────────────────────────────────────────────────── -->
     <section id="tab-settings" class="tab-panel">
-      <h2>Notification Settings</h2>
+      <h2>Settings</h2>
+
+      <!-- Staff Management (used by load-balancing triage) -->
+      <div class="settings-card">
+        <h3>Staff Management</h3>
+        <p class="settings-hint">Register fulfilment staff for automatic load-balanced order assignment. Orders submitted while Load Balancing triage is active are assigned instantly to the least-loaded staff member.</p>
+        <div class="staff-add-row">
+          <input id="new-staff-id" type="text" placeholder="e.g. Tech-1" />
+          <button id="add-staff-btn" class="btn btn-primary">Add Staff</button>
+        </div>
+        <ul id="staff-list" class="staff-list"></ul>
+        <div id="staff-message" class="message hidden"></div>
+      </div>
+
+      <h3 style="margin-top:1.5rem">Notification Settings</h3>
       <div class="settings-card">
         <p class="settings-hint">Select which channels receive order-status notifications.</p>
         <div class="settings-row">

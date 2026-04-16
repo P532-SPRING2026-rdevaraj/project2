@@ -24,7 +24,7 @@ A hospital order management system built with Spring Boot (backend) and plain HT
 
 | Change | Description | Existing files modified |
 |---|---|---|
-| **Change 1** | Department-aware triage — 3 selectable strategies (Priority First, Load Balancing, Deadline First), switchable at runtime from the UI | 1 (`OrderManager`) |
+| **Change 1** | Department-aware triage — 3 selectable strategies (Priority First, Load Balancing, Deadline First), switchable at runtime from the UI. **Load Balancing auto-assigns orders** to the least-loaded staff member — no manual claim needed. | 1 (`OrderManager`) |
 | **Change 2a** | Multi-channel notifications — Console, In-app badge, Email (mock); configurable via Settings panel | 0 |
 | **Change 2b** | Order processing decorators — Priority escalation (URGENT→STAT within 5 min window) + STAT audit logging | 1 (`Order`) |
 | **Change 3** | Command undo & replay — single-level undo via `UndoableCommandDecorator`; replay any past command from audit log | 1 (`OrderAccess`) |
@@ -58,7 +58,16 @@ Project2/
 │       ├── main/
 │       │   ├── java/com/hospital/ordersystem/
 │       │   │   ├── access/         ← Resource Access layer
+│       │   │   │   ├── OrderAccess.java
+│       │   │   │   ├── CommandLogAccess.java
+│       │   │   │   └── StaffAccess.java      ← staff registry (load-balancing)
 │       │   │   ├── client/         ← REST controllers (Client layer)
+│       │   │   │   ├── OrderController.java
+│       │   │   │   ├── TriageController.java
+│       │   │   │   ├── StaffController.java  ← staff management + auto-assign
+│       │   │   │   ├── AuditController.java
+│       │   │   │   ├── NotificationController.java
+│       │   │   │   └── UndoController.java
 │       │   │   ├── command/        ← Command pattern
 │       │   │   ├── config/         ← Spring config (Clock, Strategies, CORS)
 │       │   │   ├── decorator/      ← Decorator pattern
@@ -80,9 +89,9 @@ Project2/
 
 | Layer | Components |
 |---|---|
-| **Client** | `OrderController`, `AuditController`, `TriageController`, `NotificationController`, `UndoController` |
+| **Client** | `OrderController`, `AuditController`, `TriageController`, `NotificationController`, `UndoController`, `StaffController` |
 | **Business Logic** | `OrderManager`, `TriagingEngine`, `OrderFactory`, Commands, Decorators, Observers |
-| **Resource Access** | `OrderAccess`, `CommandLogAccess` |
+| **Resource Access** | `OrderAccess`, `CommandLogAccess`, `StaffAccess` |
 | **Resource** | `Order`, `LabOrder`, `MedicationOrder`, `ImagingOrder`, `CommandLogEntry` |
 | **Utility** | `NotificationService`, `CompositeNotificationService`, `ConsoleNotificationService`, `InAppNotificationService`, `EmailNotificationService` |
 
@@ -125,6 +134,19 @@ mvn test
 
 ---
 
+## Load Balancing Triage — How It Works
+
+When **Load Balancing** is selected as the triage strategy, manual order claiming is replaced by automatic assignment:
+
+1. **Register staff** — go to Settings → Staff Management and add staff members (e.g. `Tech-1`, `Tech-2`)
+2. **Switch strategy** — on the Order Queue tab select **Load Balancing** and click Apply
+   - All existing pending orders are immediately auto-assigned to the least-loaded staff member
+3. **Submit orders** — new orders skip the PENDING state and are instantly claimed by whoever has the fewest in-progress orders at that moment
+4. **Complete orders** — staff enter their ID and click Complete; no Claim button is shown in this mode
+5. **Switch back** — selecting Priority First or Deadline First restores manual claiming
+
+---
+
 ## API Reference
 
 ### Week 1 Endpoints
@@ -148,6 +170,10 @@ mvn test
 | `POST` | `/api/notifications/badge/reset` | Reset badge count |
 | `POST` | `/api/orders/undo` | Undo last command |
 | `POST` | `/api/orders/replay/{index}` | Replay command from audit log |
+| `GET` | `/api/staff` | List all registered fulfilment staff |
+| `POST` | `/api/staff` | Register a staff member `{ "staffId": "Tech-1" }` |
+| `DELETE` | `/api/staff/{staffId}` | Remove a staff member |
+| `POST` | `/api/staff/auto-assign` | Auto-assign all pending orders to least-loaded staff |
 
 ---
 

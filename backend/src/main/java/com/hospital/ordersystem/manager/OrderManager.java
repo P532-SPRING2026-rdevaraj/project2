@@ -2,6 +2,7 @@ package com.hospital.ordersystem.manager;
 
 import com.hospital.ordersystem.access.CommandLogAccess;
 import com.hospital.ordersystem.access.OrderAccess;
+import com.hospital.ordersystem.access.StaffAccess;
 import com.hospital.ordersystem.command.*;
 import com.hospital.ordersystem.engine.TriagingEngine;
 import com.hospital.ordersystem.factory.OrderFactory;
@@ -11,8 +12,10 @@ import com.hospital.ordersystem.strategy.TriageStrategy;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class OrderManager {
@@ -24,6 +27,7 @@ public class OrderManager {
     private final OrderEventPublisher eventPublisher;
     private final Clock clock;
     private final Map<String, TriageStrategy> strategies;
+    private final StaffAccess staffAccess;
 
     private OrderCommand lastCommand;
     private String currentStrategyName = "PRIORITY_FIRST";
@@ -34,7 +38,8 @@ public class OrderManager {
                         TriagingEngine triagingEngine,
                         OrderEventPublisher eventPublisher,
                         Clock clock,
-                        Map<String, TriageStrategy> strategies) {
+                        Map<String, TriageStrategy> strategies,
+                        StaffAccess staffAccess) {
         this.orderFactory = orderFactory;
         this.orderAccess = orderAccess;
         this.commandLogAccess = commandLogAccess;
@@ -42,6 +47,7 @@ public class OrderManager {
         this.eventPublisher = eventPublisher;
         this.clock = clock;
         this.strategies = strategies;
+        this.staffAccess = staffAccess;
     }
 
     public Order submitOrder(OrderType type, String patientName, String clinician,
@@ -49,7 +55,61 @@ public class OrderManager {
         Order order = orderFactory.createOrder(type, patientName, clinician, description, priority);
         dispatch(new StatAwareSubmitOrderCommand(order, orderAccess, triagingEngine,
                 eventPublisher, clock, commandLogAccess));
+        // Auto-assign immediately when load-balancing is active and staff is registered
+        if ("LOAD_BALANCING".equals(currentStrategyName) && !staffAccess.isEmpty()) {
+            String assignee = findLeastLoadedStaff(staffAccess.listAllStaff());
+            dispatch(new ClaimOrderCommand(order.getOrderId(), assignee, orderAccess, eventPublisher));
+        }
         return order;
+    }
+
+    // ── Staff management ─────────────────────────────────────────────────────
+
+    public void addStaff(String staffId) {
+        staffAccess.addStaff(staffId);
+    }
+
+    public void removeStaff(String staffId) {
+        staffAccess.removeStaff(staffId);
+    }
+
+    public List<String> listAllStaff() {
+        return staffAccess.listAllStaff();
+    }
+
+    /**
+     * Assigns every PENDING order to the least-loaded staff member in sequence.
+     * Used when the strategy is switched to LOAD_BALANCING mid-session with
+     * already-queued orders, or triggered manually from the UI.
+     *
+     * @return number of orders assigned
+     */
+    public int autoAssignPendingOrders() {
+        List<String> allStaff = staffAccess.listAllStaff();
+        if (allStaff.isEmpty()) return 0;
+
+        List<Order> pending = triagingEngine.getTriagedQueue();
+        int count = 0;
+        for (Order order : pending) {
+            String assignee = findLeastLoadedStaff(allStaff);
+            dispatch(new ClaimOrderCommand(order.getOrderId(), assignee, orderAccess, eventPublisher));
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Returns the registered staff member with the fewest IN_PROGRESS orders.
+     * Re-queries the store on each call so that workload stays accurate as
+     * orders are assigned in a batch.
+     */
+    private String findLeastLoadedStaff(List<String> allStaff) {
+        Map<String, Long> workload = orderAccess.listAllOrders().stream()
+                .filter(o -> o.getStatus() == OrderStatus.IN_PROGRESS && o.getClaimedBy() != null)
+                .collect(Collectors.groupingBy(Order::getClaimedBy, Collectors.counting()));
+        return allStaff.stream()
+                .min(Comparator.comparingLong(s -> workload.getOrDefault(s, 0L)))
+                .orElseThrow(() -> new IllegalStateException("No staff members registered."));
     }
 
     public void claimOrder(String orderId, String staffMember) {

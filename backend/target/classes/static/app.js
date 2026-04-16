@@ -4,6 +4,9 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
   ? 'http://localhost:8080'
   : 'https://project2-week2.onrender.com';
 
+// Tracks the active triage strategy so the queue UI can adapt
+let currentStrategy = 'PRIORITY_FIRST';
+
 // ── Tab navigation ─────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -59,8 +62,12 @@ function renderQueue(orders) {
 
 function actionsFor(o) {
   if (o.status === 'PENDING') {
-    return `<button class="btn btn-claim"   data-action="claim"  data-id="${o.orderId}">Claim</button>
-            <button class="btn btn-cancel"  data-action="cancel" data-id="${o.orderId}" data-clinician="${o.clinician}">Cancel</button>`;
+    const cancelBtn = `<button class="btn btn-cancel" data-action="cancel" data-id="${o.orderId}" data-clinician="${o.clinician}">Cancel</button>`;
+    if (currentStrategy === 'LOAD_BALANCING') {
+      // No manual claim in load-balancing mode — assignments are automatic
+      return `<span class="auto-assign-label">Pending auto-assign</span>${cancelBtn}`;
+    }
+    return `<button class="btn btn-claim" data-action="claim" data-id="${o.orderId}">Claim</button>${cancelBtn}`;
   }
   if (o.status === 'IN_PROGRESS') {
     return `<button class="btn btn-complete" data-action="complete" data-id="${o.orderId}">Complete</button>`;
@@ -74,8 +81,12 @@ async function handleAction(e) {
   const id     = btn.dataset.id;
   const staff  = document.getElementById('staff-id').value.trim();
 
-  if ((action === 'claim' || action === 'complete') && !staff) {
-    alert('Please enter your Staff ID before claiming or completing an order.');
+  if (action === 'complete' && !staff) {
+    alert('Please enter your Staff ID before completing an order.');
+    return;
+  }
+  if (action === 'claim' && !staff) {
+    alert('Please enter your Staff ID before claiming an order.');
     return;
   }
 
@@ -105,12 +116,23 @@ setInterval(fetchQueue, 3000);
 setInterval(fetchBadge, 5000);
 
 // ── Change 1: Triage strategy selector ────────────────────────────────────
+function updateQueueUIForStrategy() {
+  const lbBtn = document.getElementById('lb-auto-assign-btn');
+  if (currentStrategy === 'LOAD_BALANCING') {
+    lbBtn.classList.remove('hidden');
+  } else {
+    lbBtn.classList.add('hidden');
+  }
+}
+
 async function loadCurrentStrategy() {
   try {
     const res = await fetch(`${API_BASE}/api/triage/strategy`);
     if (!res.ok) return;
     const data = await res.json();
-    document.getElementById('triage-strategy').value = data.strategy || 'PRIORITY_FIRST';
+    currentStrategy = data.strategy || 'PRIORITY_FIRST';
+    document.getElementById('triage-strategy').value = currentStrategy;
+    updateQueueUIForStrategy();
   } catch (_) {}
 }
 
@@ -124,7 +146,10 @@ document.getElementById('apply-strategy').addEventListener('click', async () => 
     });
     const data = await res.json();
     if (!res.ok) { alert('Error: ' + (data.error || 'Unknown')); return; }
-    alert(data.message);
+    currentStrategy = strategy;
+    updateQueueUIForStrategy();
+    // In load-balancing mode, immediately assign any already-pending orders
+    if (strategy === 'LOAD_BALANCING') await runAutoAssign();
     fetchQueue();
   } catch (err) {
     alert('Request failed: ' + err.message);
@@ -132,6 +157,24 @@ document.getElementById('apply-strategy').addEventListener('click', async () => 
 });
 
 loadCurrentStrategy();
+
+// Auto-assign button in queue panel (load-balancing mode only)
+document.getElementById('lb-auto-assign-btn').addEventListener('click', async () => {
+  await runAutoAssign();
+  fetchQueue();
+  fetchAudit();
+});
+
+async function runAutoAssign() {
+  try {
+    const res = await fetch(`${API_BASE}/api/staff/auto-assign`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { alert('Auto-assign failed: ' + (data.error || 'Unknown')); return; }
+    if (data.assigned > 0) alert(data.message);
+  } catch (err) {
+    alert('Auto-assign request failed: ' + err.message);
+  }
+}
 
 // ── Change 2a: Badge counter ───────────────────────────────────────────────
 async function fetchBadge() {
@@ -248,6 +291,73 @@ document.getElementById('submit-form').addEventListener('submit', async e => {
     msg.textContent = 'Network error: ' + err.message;
     msg.className = 'message error';
     msg.classList.remove('hidden');
+  }
+});
+
+// ── Staff management (load-balancing triage) ───────────────────────────────
+async function fetchStaff() {
+  try {
+    const res = await fetch(`${API_BASE}/api/staff`);
+    if (!res.ok) return;
+    const staff = await res.json();
+    renderStaffList(staff);
+  } catch (_) {}
+}
+
+function renderStaffList(staff) {
+  const ul = document.getElementById('staff-list');
+  ul.innerHTML = '';
+  if (!staff.length) {
+    ul.innerHTML = '<li class="staff-empty">No staff registered yet.</li>';
+    return;
+  }
+  staff.forEach(id => {
+    const li = document.createElement('li');
+    li.className = 'staff-item';
+    li.innerHTML = `<span>${id}</span>
+      <button class="btn btn-cancel btn-sm" data-staff-remove="${id}">Remove</button>`;
+    ul.appendChild(li);
+  });
+  ul.querySelectorAll('[data-staff-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const staffId = btn.dataset.staffRemove;
+      await fetch(`${API_BASE}/api/staff/${encodeURIComponent(staffId)}`, { method: 'DELETE' });
+      fetchStaff();
+    });
+  });
+}
+
+document.getElementById('add-staff-btn').addEventListener('click', async () => {
+  const input = document.getElementById('new-staff-id');
+  const staffId = input.value.trim();
+  const msg = document.getElementById('staff-message');
+  if (!staffId) { alert('Enter a Staff ID.'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/staff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staffId })
+    });
+    const data = await res.json();
+    msg.textContent = res.ok ? data.message : ('Error: ' + data.error);
+    msg.className   = 'message ' + (res.ok ? 'success' : 'error');
+    msg.classList.remove('hidden');
+    setTimeout(() => msg.classList.add('hidden'), 3000);
+    if (res.ok) {
+      input.value = '';
+      fetchStaff();
+      // If load-balancing is active, auto-assign any pending orders to the new member
+      if (currentStrategy === 'LOAD_BALANCING') { await runAutoAssign(); fetchQueue(); fetchAudit(); }
+    }
+  } catch (err) {
+    alert('Request failed: ' + err.message);
+  }
+});
+
+// Load staff list when Settings tab is opened
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  if (btn.dataset.tab === 'settings') {
+    btn.addEventListener('click', fetchStaff, { once: false });
   }
 });
 
